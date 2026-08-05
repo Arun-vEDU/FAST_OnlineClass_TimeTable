@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAST Concourse — AIT Zoom Class Directory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Archivo:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg: #060a14;
+    --panel: #0d1526;
+    --panel-2: #101b32;
+    --rule: #1c2a48;
+    --amber: #ffb400;
+    --amber-dim: #7a5c15;
+    --green: #35d68f;
+    --text: #e9edf7;
+    --muted: #7386ab;
+    --red: #ff5d5d;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,180,0,0.06), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(53,214,143,0.05), transparent 60%);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    min-height: 100vh;
+    padding-bottom: 4rem;
+  }
+  ::selection{ background: var(--amber); color:#141414; }
+
+  /* ---------- Header ---------- */
+  header{
+    border-bottom: 1px solid var(--rule);
+    padding: 2rem 1.5rem 1.5rem;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  .eyebrow{
+    color: var(--amber);
+    letter-spacing: 0.28em;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  h1{
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    margin: 0.4rem 0 0.3rem;
+    letter-spacing: -0.01em;
+  }
+  .sub{
+    color: var(--muted);
+    font-size: 0.85rem;
+    max-width: 60ch;
+    line-height: 1.5;
+  }
+  .header-row{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .board-clock{
+    text-align: right;
+    color: var(--green);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+  }
+  .board-clock .time{
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--amber);
+    text-shadow: 0 0 12px rgba(255,180,0,0.35);
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    max-width: 1180px;
+    margin: 1.5rem auto 0;
+    padding: 0 1.5rem;
+    display:flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items:center;
+  }
+  .search-wrap{
+    flex: 1 1 260px;
+    position: relative;
+  }
+  .search-wrap svg{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    opacity:0.5; pointer-events:none;
+  }
+  input[type="search"]{
+    width:100%;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 0.75rem 0.9rem 0.75rem 2.3rem;
+    border-radius: 4px;
+    outline: none;
+  }
+  input[type="search"]:focus{
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(255,180,0,0.12);
+  }
+  select{
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 4px;
+    outline: none;
+  }
+  select:focus{ border-color: var(--amber); }
+  .status-pill{
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .status-pill .dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background: var(--green); margin-right:6px;
+  }
+  .status-pill.fallback .dot{ background: var(--amber); }
+
+  /* ---------- Board ---------- */
+  main{
+    max-width: 1180px;
+    margin: 2rem auto 0;
+    padding: 0 1.5rem;
+  }
+  .concourse{
+    margin-bottom: 2.25rem;
+  }
+  .concourse-title{
+    display:flex;
+    align-items:baseline;
+    gap: 0.6rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 0.5rem;
+  }
+  .concourse-title .code{
+    font-family:'Archivo', sans-serif;
+    font-weight:800;
+    color: var(--amber);
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+  }
+  .concourse-title .label{
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .board-head{
+    display:grid;
+    grid-template-columns: 90px minmax(180px,2.3fr) minmax(160px,1.6fr) 90px 130px 90px 70px;
+    gap: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .row{
+    display:grid;
+    grid-template-columns: 90px minmax(180px,2.3fr) minmax(160px,1.6fr) 90px 130px 90px 70px;
+    gap: 0.75rem;
+    align-items:center;
+    padding: 0.65rem 0.9rem;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    margin-bottom: 6px;
+    font-size: 0.83rem;
+    opacity: 0;
+    animation: flap-in 0.4s ease forwards;
+  }
+  .row:hover{ border-color: var(--amber-dim); background: var(--panel-2); }
+  @keyframes flap-in{
+    from{ opacity:0; transform: translateY(-4px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .row{ animation:none; opacity:1; }
+  }
+  .code-cell{ color: var(--amber); font-weight:600; }
+  .course-link{
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px dashed var(--amber-dim);
+    transition: border-color .15s, color .15s;
+  }
+  .course-link:hover{ color: var(--amber); border-color: var(--amber); }
+  .instructor-cell{ color: var(--muted); font-size: 0.78rem; }
+  .room-cell{ color: var(--green); font-size: 0.78rem; }
+  .zoomid-cell, .pwd-cell{
+    font-size: 0.78rem;
+    color: var(--muted);
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .copy-btn{
+    background:none;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    border-radius: 3px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .copy-btn:hover{ border-color: var(--amber); color: var(--amber); }
+  .copy-btn.copied{ border-color: var(--green); color: var(--green); }
+  .join-cell{ text-align:right; }
+  .join-btn{
+    display:inline-block;
+    background: var(--amber);
+    color: #141414;
+    font-weight: 700;
+    text-decoration:none;
+    font-size: 0.72rem;
+    padding: 5px 10px;
+    border-radius: 3px;
+    letter-spacing: 0.03em;
+  }
+  .join-btn:hover{ background: #ffc233; }
+
+  .empty-state{
+    text-align:center;
+    color: var(--muted);
+    padding: 3rem 1rem;
+    font-size: 0.85rem;
+    border: 1px dashed var(--rule);
+    border-radius: 6px;
+  }
+
+  /* ---------- mobile ---------- */
+  @media (max-width: 760px){
+    .board-head{ display:none; }
+    .row{
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+      padding: 0.85rem 0.9rem;
+    }
+    .join-cell{ text-align:left; margin-top: 4px; }
+  }
+
+  footer{
+    max-width: 1180px;
+    margin: 2rem auto 0;
+    padding: 1.25rem 1.5rem 0;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.6;
+  }
+  footer a{ color: var(--amber); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div>
+      <div class="eyebrow">Faculty of Applied Science & Technology &middot; AIT</div>
+      <h1>Zoom Class Directory</h1>
+      <div class="sub">Live meeting links, IDs and passwords for FAST classes. Search by code, course, or instructor — or click straight through to join.</div>
+    </div>
+    <div class="board-clock">
+      <div>BANGKOK (GMT+7)</div>
+      <div class="time" id="clock">--:--:--</div>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="search" id="searchInput" placeholder="Search code, course, or instructor…" autocomplete="off">
+  </div>
+  <select id="groupFilter">
+    <option value="">All programs</option>
+  </select>
+  <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Loading schedule…</span></div>
+</div>
+
+<main id="board"></main>
+
+<footer>
+  This page reads live from a published Google Sheet when one is configured (see <code>CONFIG.sheetCsvUrl</code> in the page source), and falls back to the data baked in on <span id="buildDate"></span> otherwise.
+  Meeting IDs and passwords are sensitive — avoid posting this page somewhere fully public if your institution requires restricted access.
+</footer>
+
+<script>
+/* ============================================================
+   CONFIG — point this at a published Google Sheet to make the
+   directory editable without touching code.
+
+   How to connect a Google Sheet:
+   1. Open your Sheet. Make sure row 1 has these exact headers:
+        Group | Code | Course Name | Instructor | Room | Zoom ID | Password | Direct Link
+   2. File → Share → Publish to web.
+   3. Under "Link", choose the specific sheet/tab (not "Entire
+      document"), set the format dropdown to "Comma-separated
+      values (.csv)", then click Publish.
+   4. Copy the generated URL and paste it below as sheetCsvUrl.
+   5. Keep row order grouped by "Group" — rows are displayed in
+      the order the sheet gives them, grouped under each Group
+      value as it changes.
+
+   Leave sheetCsvUrl as "" to use the built-in FALLBACK_DATA
+   below (the August 2026 semester list) instead.
+   ============================================================ */
+const CONFIG = {
+  sheetCsvUrl: "" // e.g. "https://docs.google.com/spreadsheets/d/e/2PACX-XXXXXXX/pub?output=csv"
+};
+
+const FALLBACK_DATA = [
+["CSCT: Smart Networks & Communication Engineering","AST02.34","Signal, Systems and Stochastic Processes","Prof. Attaphongse Taparugssanagorn & Dr. Manash","TC103 & TC202 [Lab]","990 1789 9202","741255","https://ait-ac-th.zoom.us/j/99017899202?pwd=WsK5LcbG32tdiiFbtUh3ws1bwYczaG.1"],
+["CSCT: Smart Networks & Communication Engineering","AST02.28","Data Communications","Dr. Teerapat Sanguankotchakorn","TC103","950 2813 2567","205384","https://ait-ac-th.zoom.us/j/95028132567?pwd=QA7bmqhLqd1CfCLa4zpmihCvsqmWxN.1"],
+["CSCT: Smart Networks & Communication Engineering","AST00.02","Optical Networks","Dr. Poompat Saengudomlert","TC101","941 8646 5396","577100","https://ait-ac-th.zoom.us/j/94186465396?pwd=IRXqYmOVeKzqqXefjsYYwz7qzB2Dik.1"],
+["CSCT: Smart Networks & Communication Engineering","AST02.30","Machine Learning for Wireless Communications","Prof. Attaphongse Taparugssanagorn","TC103","910 1045 1467","064985","https://ait-ac-th.zoom.us/j/91010451467?pwd=eJmYnxFgN1axMoftr3mq5KFq88WMku.1"],
+
+["CSCT: Digital Technology & Enterprise Information Management","AST02.23","Human-Computer Interaction","Dr. Chaklam Silpasuwanchai","CS210","955 4703 1445","991694","https://ait-ac-th.zoom.us/j/95547031445?pwd=A1JpIJDnTXD4mLkZSq9ZwoJ3oktk8Y.1"],
+["CSCT: Digital Technology & Enterprise Information Management","AST02.21","E-Business Development and Technology","Dr. Vatcharaporn Esichaikul","CS210","956 5547 7138","178438","https://ait-ac-th.zoom.us/j/95655477138?pwd=bkZgaDaGtWIU3bdE6GZWS2mIlRm57f.1"],
+
+["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.12","Machine Learning","Dr. Chaklam Silpasuwanchai","CS210","940 9783 0661","408960","https://ait-ac-th.zoom.us/j/94097830661?pwd=2GglMkehBIIomao8AlppKcNzzmObah.1"],
+["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.11","Data Modeling and Management","Dr. Chutiporn Anutariya & Dr. Kantinee Katchapakirin","CS210","935 6341 3335","844011","https://ait-ac-th.zoom.us/j/93563413335?pwd=FAq9B6ok5sTzRJslGgcYG6trypbn9t.1"],
+["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.903","Explainable Data Science","Dr. Sein Minn","CS209","921 1863 5121","269274","https://ait-ac-th.zoom.us/j/92118635121?pwd=UM7gHE7FIasQxNN5A2lEQgMNkBXLhu.1"],
+["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.902","Modern Applied Statistics for Data Science","Dr. Sein Minn","CS209","989 1548 9514","703973","https://ait-ac-th.zoom.us/j/98915489514?pwd=TojKUbhfBl7vNOhhSLkBtdR1aDdE4f.1"],
+["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.10","Computer Programming for Data Science & Artificial Intelligence","Dr. Chantri Polprasert","CS209","946 5475 1329","323416","https://ait-ac-th.zoom.us/j/94654751329?pwd=UXqtmVk6Ewa8ja4ul7TuQa5nv7bNob.1"],
+["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.14","Knowledge Representation and Reasoning","Prof. Phan Minh Dung","CS106","944 1362 7825","611794","https://ait-ac-th.zoom.us/j/94413627825?pwd=JjCZS77nsgwf7OWq1CosJnyalfTshV.1"],
+
+["CSCT: Computer Science & Software Engineering (CSCE)","AST02.04","Full Stack Application Development","Dr. Chantri Polprasert","CS209","940 7187 2699","061703","https://ait-ac-th.zoom.us/j/94071872699?pwd=mjVy42zZCo1XKbyZdRWJGfL28jtvS6.1"],
+["CSCT: Computer Science & Software Engineering (CSCE)","AST02.01","Theory of Computation","Prof. Phan Minh Dung","CS106","983 2744 1841","197088","https://ait-ac-th.zoom.us/j/98327441841?pwd=GIS5zRRqhgTG4wZUfWAqSFVRCdmQvD.1"],
+
+["RSGIS: Remote Sensing & Geographic Information Systems","AST03.01","Geographic Information System","Prof. Nitin K. Tripathi","E233 & E233 [Lab]","912 2936 3369","363822","https://ait-ac-th.zoom.us/j/91229363369?pwd=GPx5u1JwOp9p2HlwDDZd8aP23Ty7oS.1"],
+["RSGIS: Remote Sensing & Geographic Information Systems","AST03.08","GIS for Health","Prof. Nitin K. Tripathi","E233","936 2270 1265","192583","https://ait-ac-th.zoom.us/j/93622701265?pwd=KzFX6CWANz76rXZM6FXRLDWbYGmiGb.1"],
+["RSGIS: Remote Sensing & Geographic Information Systems","AST03.02","Remote Sensing","Dr. Salvatore G. P. Virdis","W202","982 3981 8339","526246","https://ait-ac-th.zoom.us/j/98239818339?pwd=QanV6tJn500U2jOQE0XFpbtkrrutwa.1"],
+["RSGIS: Remote Sensing & Geographic Information Systems","AST03.03","Introduction to Python in Environmental Data Analysis","Dr. Salvatore G. P. Virdis","W202","988 1494 6037","835442","https://ait-ac-th.zoom.us/j/98814946037?pwd=JaebJsOCmLBclgzfqYxulrHfZbjh02.1"],
+["RSGIS: Remote Sensing & Geographic Information Systems","AST03.06","Web GIS Technology","Dr. Sarawut Ninsawat","W202","970 6241 7360","409292","https://ait-ac-th.zoom.us/j/97062417360?pwd=vOsBib3u8jUXnZ1AZqvjYDVx1Kzf0i.1"],
+["RSGIS: Remote Sensing & Geographic Information Systems","AST03.15","Introduction to Global Navigation Satellite Systems","Dr. Sanit Arunplod","W202","950 5239 7799","190556","https://ait-ac-th.zoom.us/j/95052397799?pwd=uMwWQS51bie9A3mYya5YjAKajAhsau.1"],
+["RSGIS: Remote Sensing & Geographic Information Systems","AST03.18","Geospatial Transformation & Digital Surveying Technologies","Dr. Phisan Santitamnont & Dr. Sanit Arunplod","W202","913 4096 2882","471839","https://ait-ac-th.zoom.us/j/91340962882?pwd=am8BQRAThaW1NKlGG0Vfr1tVGx1Fc1.1"],
+
+["ISE: AIoT","AST01.47","Wireless Technologies for Internet of Things","Prof. Attaphongse Taparugssanagorn","TC101","946 5965 9828","927562","https://ait-ac-th.zoom.us/j/94659659828?pwd=Ol47mL7F73FIab59yPWZb3Wnl8z4Df.1"],
+["ISE: AIoT","AST01.43","Information and Communication Technology User-Centric Technology Design","Dr. Teerawat Issariyakul","TC103","926 5151 8765","822450","https://ait-ac-th.zoom.us/j/92651518765?pwd=EnLsUwqqd1XHZvYFXF6cHUjIJVtIJH.1"],
+["ISE: AIoT","AST01.41","Fundamentals of Internet of Things and Cloud Computing","Dr. Nisit Pukrongta","TC203","912 2671 4686","552775","https://ait-ac-th.zoom.us/j/91226714686?pwd=rv4DkFmkRaDqDIikNi5JJx8i2nPK2F.1"],
+
+["ISE: Biomedical Engineering (BME)","AST01.36","Medical Instrumentation and Imaging","Dr. Branesh Pillai","NANO","921 0877 7124","404740","https://ait-ac-th.zoom.us/j/92108777124?pwd=moi9UU2jTTS7f2VvfUBQCrg190OvIa.1"],
+["ISE: Biomedical Engineering (BME)","AST01.34","Physiology for Medical Engineering","Prof. Cdr. Sorayouth Chumnanvej & Dr. Branesh Pillai","NANO","930 8590 8673","871750","https://ait-ac-th.zoom.us/j/93085908673?pwd=vLvd0Z4HNcDi5TnCFScS9YSqHFRlOP.1"],
+["ISE: Biomedical Engineering (BME)","AST01.901","Materials and Mechanics in Medicine Laboratory","Dr. Branesh Pillai","NANO","979 2873 6178","675896","https://ait-ac-th.zoom.us/j/97928736178?pwd=moIcC8bIPtWKBxNI1LS5Rb4jIoAVSg.1"],
+["ISE: Biomedical Engineering (BME)","AST01.29","Fundamentals of Bionanotechnology","Dr. M. J. Khan","NANO","937 3680 2930","118391","https://ait-ac-th.zoom.us/j/93736802930?pwd=5lMavSfwkmlbY3uH0k5WqogBkiKBpU.1"],
+
+["ISE: Mechatronics and Machine Intelligence (MMI)","AST01.14","Kinematics and Dynamics of Mechanisms and Robots","Dr. Wiput Tuvayanond","ISE106 & ISE106 [Lab]","973 9893 3540","487406","https://ait-ac-th.zoom.us/j/97398933540?pwd=im0VWkbCiyK1U9ibG8ODTyaVG2JWe6.1"],
+["ISE: Mechatronics and Machine Intelligence (MMI)","AST01.18","Control Theory","Dr. Wiput Tuvayanond","ISE106","994 9907 1478","454370","https://ait-ac-th.zoom.us/j/99499071478?pwd=J6y5ySMfbjwlOZpnZgPej2lvNuuFuI.1"],
+["ISE: Mechatronics and Machine Intelligence (MMI)","AST01.38","Deep Learning for Computer Vision","Prof. Mongkol Ekpanyapong","ISE106 & ISE106 [Lab]","960 5437 7824","374732","https://ait-ac-th.zoom.us/j/96054377824?pwd=koj1xUZAOEtHDHTjuB2LnNzlVYnOjp.1"],
+
+["ISE: Semiconductor Engineering (SCE)","AST01.26","Embedded Systems Architecture","Prof. Mongkol Ekpanyapong","ISE106","944 8746 2030","302762","https://ait-ac-th.zoom.us/j/94487462030?pwd=vPMf372WFWnXEk6Ht2XSk32YzjwXQD.1"],
+["ISE: Semiconductor Engineering (SCE)","AST01.20","Microelectronics Fabrication Technology","Dr. Chanchana Thanachayanont","ISE106","924 5555 0615","926954","https://ait-ac-th.zoom.us/j/92455550615?pwd=an3fR0fJ53Gac0SeBdsiZxBL22fahr.1"],
+["ISE: Semiconductor Engineering (SCE)","AST01.24","VLSI Design","Dr. Pruek Vannaiampikul","ISE106","957 0560 4947","463853","https://ait-ac-th.zoom.us/j/95705604947?pwd=L8tpmvmQ8bg8gQoDI4yaNQH1dX2rbm.1"],
+
+["ISE: Industrial and Manufacturing Engineering (IME)","AST01.02","Statistical Models and Design of Experiments","Prof. Huynh Trung Luong","ISE115","981 7865 5491","144146","https://ait-ac-th.zoom.us/j/98178655491?pwd=N4uLA5i0zmmMxKPBF94THSlQ48tD4c.1"],
+["ISE: Industrial and Manufacturing Engineering (IME)","AST01.03","Quality Control and Management","Dr. Chumpol Yuangyai","ISE115","932 6165 2953","103146","https://ait-ac-th.zoom.us/j/93261652953?pwd=d6sba15H2Ixm9aRi8dwy2F9NL61DMv.1"],
+["ISE: Industrial and Manufacturing Engineering (IME)","AST01.10","Additive Manufacturing and Reverse Engineering","Dr. Pisut Koomsap","ISE235","956 0887 3783","244146","https://ait-ac-th.zoom.us/j/95608873783?pwd=SIT5wux24mGrFsaQpXJB3eFfw32iMB.1"],
+["ISE: Industrial and Manufacturing Engineering (IME)","AST01.13","Communications & People Skills Development for Engineering Leaders","Dr. Pisut Koomsap","ISE235","964 3196 4002","344146","https://ait-ac-th.zoom.us/j/96431964002?pwd=dztywZOtidQxQ9AGfR8qAMkTKpgqCb.1"]
+].map(r => ({Group:r[0], Code:r[1], "Course Name":r[2], Instructor:r[3], Room:r[4], "Zoom ID":r[5], Password:r[6], "Direct Link":r[7]}));
+
+/* ---------------- Rendering ---------------- */
+const board = document.getElementById('board');
+const groupFilter = document.getElementById('groupFilter');
+const searchInput = document.getElementById('searchInput');
+const statusPill = document.getElementById('statusPill');
+const statusText = document.getElementById('statusText');
+
+let rows = [];
+
+function groupRows(data){
+  const groups = [];
+  const index = new Map();
+  data.forEach(r => {
+    const g = (r.Group || 'Ungrouped').trim();
+    if(!index.has(g)){
+      index.set(g, { name: g, items: [] });
+      groups.push(index.get(g));
+    }
+    index.get(g).items.push(r);
+  });
+  return groups;
+}
+
+function populateFilter(groups){
+  groupFilter.innerHTML = '<option value="">All programs</option>' +
+    groups.map(g => `<option value="${escapeAttr(g.name)}">${escapeHtml(g.name)}</option>`).join('');
+}
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+function render(){
+  const q = searchInput.value.trim().toLowerCase();
+  const activeGroup = groupFilter.value;
+  const groups = groupRows(rows);
+  board.innerHTML = '';
+
+  let shown = 0;
+  let delay = 0;
+
+  groups.forEach(g => {
+    if(activeGroup && g.name !== activeGroup) return;
+
+    const filtered = g.items.filter(r => {
+      if(!q) return true;
+      const hay = `${r.Code} ${r["Course Name"]} ${r.Instructor}`.toLowerCase();
+      return hay.includes(q);
+    });
+    if(filtered.length === 0) return;
+
+    const section = document.createElement('div');
+    section.className = 'concourse';
+
+    const title = document.createElement('div');
+    title.className = 'concourse-title';
+    title.innerHTML = `<span class="code">${escapeHtml(g.name.split(':')[0])}</span><span class="label">${escapeHtml(g.name.split(':').slice(1).join(':').trim())}</span>`;
+    section.appendChild(title);
+
+    const head = document.createElement('div');
+    head.className = 'board-head';
+    head.innerHTML = `<div>Code</div><div>Course</div><div>Instructor</div><div>Room</div><div>Zoom ID</div><div>Password</div><div></div>`;
+    section.appendChild(head);
+
+    filtered.forEach(r => {
+      shown++;
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.style.animationDelay = `${Math.min(delay, 500)}ms`;
+      delay += 12;
+
+      const link = r["Direct Link"] || '#';
+      row.innerHTML = `
+        <div class="code-cell">${escapeHtml(r.Code)}</div>
+        <div><a class="course-link" href="${escapeAttr(link)}" target="_blank" rel="noopener">${escapeHtml(r["Course Name"])}</a></div>
+        <div class="instructor-cell">${escapeHtml(r.Instructor)}</div>
+        <div class="room-cell">${escapeHtml(r.Room)}</div>
+        <div class="zoomid-cell">${escapeHtml(r["Zoom ID"])} <button class="copy-btn" data-copy="${escapeAttr((r["Zoom ID"]||'').replace(/\s/g,''))}">copy</button></div>
+        <div class="pwd-cell">${escapeHtml(r.Password)} <button class="copy-btn" data-copy="${escapeAttr(r.Password)}">copy</button></div>
+        <div class="join-cell"><a class="join-btn" href="${escapeAttr(link)}" target="_blank" rel="noopener">Join →</a></div>
+      `;
+      section.appendChild(row);
+    });
+
+    board.appendChild(section);
+  });
+
+  if(shown === 0){
+    board.innerHTML = `<div class="empty-state">No classes match “${escapeHtml(q)}”. Try a course code, name, or instructor.</div>`;
+  }
+}
+
+searchInput.addEventListener('input', render);
+groupFilter.addEventListener('change', render);
+
+board.addEventListener('click', e => {
+  const btn = e.target.closest('.copy-btn');
+  if(!btn) return;
+  navigator.clipboard.writeText(btn.dataset.copy).then(() => {
+    btn.classList.add('copied');
+    const original = btn.textContent;
+    btn.textContent = '✓';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = original; }, 1200);
+  });
+});
+
+/* ---------------- Data loading ---------------- */
+function setStatus(text, isFallback){
+  statusText.textContent = text;
+  statusPill.classList.toggle('fallback', !!isFallback);
+}
+
+function boot(data, fallback){
+  rows = data;
+  populateFilter(groupRows(rows));
+  render();
+  setStatus(fallback ? 'Showing built-in schedule' : 'Live from Google Sheet', fallback);
+}
+
+if(CONFIG.sheetCsvUrl){
+  setStatus('Loading from Google Sheet…');
+  Papa.parse(CONFIG.sheetCsvUrl, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: results => {
+      if(results.data && results.data.length && results.data[0].Code){
+        boot(results.data, false);
+      } else {
+        boot(FALLBACK_DATA, true);
+      }
+    },
+    error: () => boot(FALLBACK_DATA, true)
+  });
+} else {
+  boot(FALLBACK_DATA, true);
+}
+
+/* ---------------- Clock ---------------- */
+function tick(){
+  const now = new Date();
+  const bkk = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+  document.getElementById('clock').textContent = bkk.toLocaleTimeString('en-GB');
+}
+tick();
+setInterval(tick, 1000);
+document.getElementById('buildDate').textContent = new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>
