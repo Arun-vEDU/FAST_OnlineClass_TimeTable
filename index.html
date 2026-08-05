@@ -271,6 +271,19 @@
     line-height: 1.6;
   }
   footer a{ color: var(--amber); }
+  .visit-stats{
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--rule);
+    display:flex;
+    align-items:center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .visit-stats .eye{ color: var(--green); }
+  .visit-stats #visitCount{ color: var(--amber); font-weight:600; }
+  .visit-stats .sep{ opacity:0.4; }
 </style>
 </head>
 <body>
@@ -305,6 +318,12 @@
 <footer>
   Asian Institute of Technology, Faculty of Advanced Science and Technology.
   Contact Arunya P. Senadeera S. D. at arunya@ait.ac.th for detils.
+  <div class="visit-stats">
+    <span class="eye">&#128065;</span>
+    <span id="visitCount">—</span> visits recorded
+    <span class="sep">·</span>
+    <a id="viewLogLink" href="#" target="_blank" rel="noopener">view visitor log</a>
+  </div>
 </footer>
 
 <script>
@@ -320,6 +339,8 @@
       document"), set the format dropdown to "Comma-separated
       values (.csv)", then click Publish.
    4. Copy the generated URL and paste it below as sheetCsvUrl.
+      NOTE: it must end in "output=csv" — a "pubhtml" link is an
+      HTML page, not CSV, and won't parse correctly.
    5. Keep row order grouped by "Group" — rows are displayed in
       the order the sheet gives them, grouped under each Group
       value as it changes.
@@ -328,7 +349,45 @@
    below (the August 2026 semester list) instead.
    ============================================================ */
 const CONFIG = {
-  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPj_XOlC8Cautu-vsSDv07iIP0R-caffhIwTK3yIfcyJzWErO6t4AKQe_s4M5SMDeXMwhPkCQR4afG/pubhtml?gid=0&single=true" // e.g. "https://docs.google.com/spreadsheets/d/e/2PACX-XXXXXXX/pub?output=csv"
+  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPj_XOlC8Cautu-vsSDv07iIP0R-caffhIwTK3yIfcyJzWErO6t4AKQe_s4M5SMDeXMwhPkCQR4afG/pub?gid=0&single=true&output=csv"
+};
+
+/* ============================================================
+   VISIT TRACKING — optional, logs each page view to a "Visits"
+   tab in the same Google Sheet via a free Apps Script Web App.
+
+   Setup:
+   1. In your Sheet, add a tab named exactly "Visits" with header
+      row: Timestamp | Page | Referrer | Browser | Language | Screen
+   2. Extensions → Apps Script, replace the code with:
+
+        function doGet(e) {
+          const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Visits');
+          sheet.appendRow([
+            new Date(),
+            e.parameter.page || '',
+            e.parameter.ref || '',
+            e.parameter.ua || '',
+            e.parameter.lang || '',
+            e.parameter.screen || ''
+          ]);
+          return ContentService.createTextOutput(JSON.stringify({ count: sheet.getLastRow() - 1 }))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+
+   3. Deploy → New deployment → Web app → Execute as "Me",
+      Who has access "Anyone" → Deploy. Copy the /exec URL below
+      as logUrl.
+   4. (Optional) Publish the "Visits" tab to web too, and paste
+      that link below as viewUrl so the footer's "view visitor
+      log" link opens it for you.
+
+   Leave both blank to disable — the footer will just say
+   "not configured" instead of breaking.
+   ============================================================ */
+const VISIT_CONFIG = {
+  logUrl: "",   // e.g. "https://script.google.com/macros/s/XXXXXXXX/exec"
+  viewUrl: ""   // e.g. link to the published "Visits" tab, for your own review
 };
 
 const FALLBACK_DATA = [
@@ -528,7 +587,38 @@ function tick(){
 }
 tick();
 setInterval(tick, 1000);
-document.getElementById('buildDate').textContent = new Date().toISOString().slice(0,10);
+document.getElementById('buildDate') && (document.getElementById('buildDate').textContent = new Date().toISOString().slice(0,10));
+
+/* ---------------- Visit tracking ---------------- */
+function logVisit(){
+  const countEl = document.getElementById('visitCount');
+  const linkEl = document.getElementById('viewLogLink');
+
+  if(VISIT_CONFIG.viewUrl){
+    linkEl.href = VISIT_CONFIG.viewUrl;
+  } else {
+    linkEl.style.display = 'none';
+  }
+
+  if(!VISIT_CONFIG.logUrl){
+    countEl.textContent = 'not configured';
+    return;
+  }
+
+  const params = new URLSearchParams({
+    page: location.pathname,
+    ref: document.referrer || 'direct',
+    ua: navigator.userAgent,
+    lang: navigator.language,
+    screen: `${screen.width}x${screen.height}`
+  });
+
+  fetch(`${VISIT_CONFIG.logUrl}?${params.toString()}`)
+    .then(r => r.json())
+    .then(data => { countEl.textContent = data.count ?? '—'; })
+    .catch(() => { countEl.textContent = '—'; });
+}
+logVisit();
 </script>
 </body>
 </html>
