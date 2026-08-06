@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
 <title>FAST Concourse — AIT-FAST Zoom Class Directory</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Archivo:wght@600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --bg: #060a14;
@@ -33,6 +34,81 @@
     padding-bottom: 4rem;
   }
   ::selection{ background: var(--amber); color:#141414; }
+
+  /* ---------- Auth overlay ---------- */
+  .auth-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(6,10,20,0.94);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1.5rem;
+  }
+  .auth-card{
+    max-width: 420px;
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+  }
+  .auth-eyebrow{
+    color: var(--amber);
+    letter-spacing: 0.28em;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  .auth-card h2{
+    font-family: 'Archivo', sans-serif;
+    font-size: 1.3rem;
+    margin: 0 0 0.75rem;
+  }
+  .auth-copy{
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+  .auth-signin-btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--amber);
+    color: #141414;
+    border: none;
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 0.75rem 1.4rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  .auth-signin-btn:hover{ background: #ffc233; }
+  .auth-signin-btn:disabled{ opacity: 0.5; cursor: not-allowed; }
+  .auth-error{
+    margin-top: 1rem;
+    color: var(--red);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    padding: 0.75rem;
+    border: 1px solid rgba(255,93,93,0.35);
+    border-radius: 4px;
+    background: rgba(255,93,93,0.08);
+  }
+  .auth-note{
+    margin-top: 1rem;
+    color: var(--muted);
+    font-size: 0.68rem;
+    line-height: 1.5;
+  }
+  #appContent{ display:none; }
 
   /* ---------- Header ---------- */
   header{
@@ -79,6 +155,15 @@
     font-weight: 600;
     color: var(--amber);
     text-shadow: 0 0 12px rgba(255,180,0,0.35);
+  }
+  .signed-in-as{
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+  }
+  .signed-in-as button{
+    background:none; border:none; color: var(--amber); cursor:pointer;
+    font-family: inherit; font-size: 0.68rem; text-decoration: underline; padding:0;
   }
 
   /* ---------- Controls ---------- */
@@ -288,12 +373,26 @@
 </head>
 <body>
 
+<!-- ============ LOGIN GATE ============ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-eyebrow">Restricted Access</div>
+    <h2>AIT-FAST Zoom Directory</h2>
+    <p class="auth-copy">Meeting IDs, passwords, and join links are restricted to AIT accounts. Sign in with your <strong>@ait.asia</strong> AIT account to continue.</p>
+    <button class="auth-signin-btn" id="signInBtn" disabled>Loading sign-in…</button>
+    <div class="auth-error" id="authError" hidden></div>
+    <div class="auth-note">Contact arunya@ait.asia.</div>
+  </div>
+</div>
+
+<div id="appContent">
 <header>
   <div class="header-row">
     <div>
       <div class="eyebrow">Faculty of Advanced Science & Technology &middot; AIT</div>
       <h1>Zoom Class Directory</h1>
       <div class="sub">Live meeting links, IDs and passwords for FAST classes. Search by code, course, or instructor — or click straight through to join.</div>
+      <div class="signed-in-as" id="signedInAs"></div>
     </div>
     <div class="board-clock">
       <div>BANGKOK (GMT+7)</div>
@@ -325,120 +424,108 @@
     <a id="viewLogLink" href="#" target="_blank" rel="noopener">view visitor log</a>
   </div>
 </footer>
+</div>
 
 <script>
 /* ============================================================
-   CONFIG — point this at a published Google Sheet to make the
-   directory editable without touching code.
+   AUTH CONFIG — Google Sign-In only needs to confirm identity
+   here; the actual data lives behind a rate-limited proxy (see
+   DATA_CONFIG below), not fetched directly from the client.
 
-   How to connect a Google Sheet:
-   1. Open your Sheet. Make sure row 1 has these exact headers:
-        Group | Code | Course Name | Instructor | Room | Zoom ID | Password | Direct Link
-   2. File → Share → Publish to web.
-   3. Under "Link", choose the specific sheet/tab (not "Entire
-      document"), set the format dropdown to "Comma-separated
-      values (.csv)", then click Publish.
-   4. Copy the generated URL and paste it below as sheetCsvUrl.
-      NOTE: it must end in "output=csv" — a "pubhtml" link is an
-      HTML page, not CSV, and won't parse correctly.
-   5. Keep row order grouped by "Group" — rows are displayed in
-      the order the sheet gives them, grouped under each Group
-      value as it changes.
-
-   Leave sheetCsvUrl as "" to use the built-in FALLBACK_DATA
-   below (the August 2026 semester list) instead.
+   Setup:
+   1. Google Cloud Console → Credentials → Create OAuth client ID
+      (Web application) → add this page's origin (e.g.
+      https://you.github.io) under Authorized JavaScript origins
+      → copy the Client ID below. You do NOT need to enable the
+      Sheets API for this project — the proxy handles that.
    ============================================================ */
-const CONFIG = {
-  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPj_XOlC8Cautu-vsSDv07iIP0R-caffhIwTK3yIfcyJzWErO6t4AKQe_s4M5SMDeXMwhPkCQR4afG/pub?gid=0&single=true&output=csv"
+const AUTH_CONFIG = {
+  googleClientId: "",              // OAuth 2.0 Client ID from Google Cloud Console
+  allowedDomain: "ait.asia"        // Only accounts on this Workspace domain will pass the client-side check
 };
 
 /* ============================================================
-   VISIT TRACKING — optional, logs each page view to a "Visits"
-   tab in the same Google Sheet via a free Apps Script Web App.
+   DATA_CONFIG — a single Apps Script Web App that:
+     (a) verifies the visitor's Google token server-side,
+     (b) checks their email domain,
+     (c) rate-limits requests per person (real bot mitigation —
+         this is the part a direct Sheets API call cannot do),
+     (d) logs the access, and
+     (e) returns the course data.
+
+   Because the script runs with its own access to the
+   spreadsheet, you do NOT need to share the Sheet with every
+   viewer individually — access is controlled entirely by the
+   checks inside the script below.
 
    Setup:
-   1. In your Sheet, add a tab named exactly "Visits" with header
-      row: Timestamp | Page | Referrer | Browser | Language | Screen
-   2. Extensions → Apps Script, replace the code with:
+   1. In your Sheet, keep your course data on a tab (default
+      name "Sheet1" below — change DATA_SHEET_NAME if different)
+      with header row: Group | Code | Course Name | Instructor |
+      Room | Zoom ID | Password | Direct Link
+   2. Add a second tab named exactly "Visits" with header row:
+      Timestamp | Email | Page | Referrer | Browser
+   3. Extensions → Apps Script, replace the code with:
+
+        const ALLOWED_DOMAIN = 'ait.asia';
+        const DATA_SHEET_NAME = 'Sheet1';
+        const RATE_LIMIT_PER_HOUR = 40;
 
         function doGet(e) {
-          const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Visits');
-          sheet.appendRow([
-            new Date(),
-            e.parameter.page || '',
-            e.parameter.ref || '',
-            e.parameter.ua || '',
-            e.parameter.lang || '',
-            e.parameter.screen || ''
-          ]);
-          return ContentService.createTextOutput(JSON.stringify({ count: sheet.getLastRow() - 1 }))
+          const token = e.parameter.token;
+          if (!token) return json({ error: 'missing_token' });
+
+          const infoResp = UrlFetchApp.fetch(
+            'https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + encodeURIComponent(token),
+            { muteHttpExceptions: true }
+          );
+          if (infoResp.getResponseCode() !== 200) return json({ error: 'invalid_token' });
+
+          const info = JSON.parse(infoResp.getContentText());
+          const email = info.email || '';
+          if (!email.endsWith('@' + ALLOWED_DOMAIN)) return json({ error: 'domain_not_allowed' });
+
+          const props = PropertiesService.getScriptProperties();
+          const key = 'rl_' + email;
+          const now = Date.now();
+          const record = JSON.parse(props.getProperty(key) || '{"count":0,"reset":0}');
+          if (now > record.reset) { record.count = 0; record.reset = now + 3600000; }
+          record.count++;
+          props.setProperty(key, JSON.stringify(record));
+          if (record.count > RATE_LIMIT_PER_HOUR) return json({ error: 'rate_limited' });
+
+          const ss = SpreadsheetApp.getActiveSpreadsheet();
+          const visits = ss.getSheetByName('Visits');
+          if (visits) {
+            visits.appendRow([new Date(), email, e.parameter.page || '', e.parameter.ref || '', e.parameter.ua || '']);
+          }
+
+          const values = ss.getSheetByName(DATA_SHEET_NAME).getDataRange().getValues();
+          return json({ values: values, count: visits ? visits.getLastRow() - 1 : null });
+        }
+
+        function json(obj) {
+          return ContentService.createTextOutput(JSON.stringify(obj))
             .setMimeType(ContentService.MimeType.JSON);
         }
 
-   3. Deploy → New deployment → Web app → Execute as "Me",
+   4. Deploy → New deployment → Web app → Execute as "Me",
       Who has access "Anyone" → Deploy. Copy the /exec URL below
-      as logUrl.
-   4. (Optional) Publish the "Visits" tab to web too, and paste
-      that link below as viewUrl so the footer's "view visitor
-      log" link opens it for you.
+      as dataApiUrl.
+   5. (Optional) Publish the "Visits" tab to web, paste that link
+      as viewUrl for your own review link in the footer.
 
-   Leave both blank to disable — the footer will just say
-   "not configured" instead of breaking.
+   Notes:
+   - RATE_LIMIT_PER_HOUR resets on redeploy (PropertiesService
+     persists otherwise). Raise/lower it to taste.
+   - This stops bulk/automated pulls, even from a valid AIT
+     account. It cannot stop a person from manually copying what
+     they can already see on screen — no client-facing app can.
    ============================================================ */
-const VISIT_CONFIG = {
-  logUrl: "",   // e.g. "https://script.google.com/macros/s/XXXXXXXX/exec"
-  viewUrl: ""   // e.g. link to the published "Visits" tab, for your own review
+const DATA_CONFIG = {
+  dataApiUrl: "", // e.g. "https://script.google.com/macros/s/XXXXXXXX/exec"
+  viewUrl: ""     // link to the published "Visits" tab, for your own review
 };
-
-const FALLBACK_DATA = [
-["CSCT: Smart Networks & Communication Engineering","AST02.34","Signal, Systems and Stochastic Processes","Prof. Attaphongse Taparugssanagorn & Dr. Manash","TC103 & TC202 [Lab]","990 1789 9202","741255","https://ait-ac-th.zoom.us/j/99017899202?pwd=WsK5LcbG32tdiiFbtUh3ws1bwYczaG.1"],
-["CSCT: Smart Networks & Communication Engineering","AST02.28","Data Communications","Dr. Teerapat Sanguankotchakorn","TC103","950 2813 2567","205384","https://ait-ac-th.zoom.us/j/95028132567?pwd=QA7bmqhLqd1CfCLa4zpmihCvsqmWxN.1"],
-["CSCT: Smart Networks & Communication Engineering","AST00.02","Optical Networks","Dr. Poompat Saengudomlert","TC101","941 8646 5396","577100","https://ait-ac-th.zoom.us/j/94186465396?pwd=IRXqYmOVeKzqqXefjsYYwz7qzB2Dik.1"],
-["CSCT: Smart Networks & Communication Engineering","AST02.30","Machine Learning for Wireless Communications","Prof. Attaphongse Taparugssanagorn","TC103","910 1045 1467","064985","https://ait-ac-th.zoom.us/j/91010451467?pwd=eJmYnxFgN1axMoftr3mq5KFq88WMku.1"],
-
-["CSCT: Digital Technology & Enterprise Information Management","AST02.23","Human-Computer Interaction","Dr. Chaklam Silpasuwanchai","CS210","955 4703 1445","991694","https://ait-ac-th.zoom.us/j/95547031445?pwd=A1JpIJDnTXD4mLkZSq9ZwoJ3oktk8Y.1"],
-["CSCT: Digital Technology & Enterprise Information Management","AST02.21","E-Business Development and Technology","Dr. Vatcharaporn Esichaikul","CS210","956 5547 7138","178438","https://ait-ac-th.zoom.us/j/95655477138?pwd=bkZgaDaGtWIU3bdE6GZWS2mIlRm57f.1"],
-
-["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.12","Machine Learning","Dr. Chaklam Silpasuwanchai","CS210","940 9783 0661","408960","https://ait-ac-th.zoom.us/j/94097830661?pwd=2GglMkehBIIomao8AlppKcNzzmObah.1"],
-["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.11","Data Modeling and Management","Dr. Chutiporn Anutariya & Dr. Kantinee Katchapakirin","CS210","935 6341 3335","844011","https://ait-ac-th.zoom.us/j/93563413335?pwd=FAq9B6ok5sTzRJslGgcYG6trypbn9t.1"],
-["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.903","Explainable Data Science","Dr. Sein Minn","CS209","921 1863 5121","269274","https://ait-ac-th.zoom.us/j/92118635121?pwd=UM7gHE7FIasQxNN5A2lEQgMNkBXLhu.1"],
-["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.902","Modern Applied Statistics for Data Science","Dr. Sein Minn","CS209","989 1548 9514","703973","https://ait-ac-th.zoom.us/j/98915489514?pwd=TojKUbhfBl7vNOhhSLkBtdR1aDdE4f.1"],
-["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.10","Computer Programming for Data Science & Artificial Intelligence","Dr. Chantri Polprasert","CS209","946 5475 1329","323416","https://ait-ac-th.zoom.us/j/94654751329?pwd=UXqtmVk6Ewa8ja4ul7TuQa5nv7bNob.1"],
-["CSCT: Data Science & Artificial Intelligence (DSAI)","AST02.14","Knowledge Representation and Reasoning","Prof. Phan Minh Dung","CS106","944 1362 7825","611794","https://ait-ac-th.zoom.us/j/94413627825?pwd=JjCZS77nsgwf7OWq1CosJnyalfTshV.1"],
-
-["CSCT: Computer Science & Software Engineering (CSCE)","AST02.04","Full Stack Application Development","Dr. Chantri Polprasert","CS209","940 7187 2699","061703","https://ait-ac-th.zoom.us/j/94071872699?pwd=mjVy42zZCo1XKbyZdRWJGfL28jtvS6.1"],
-["CSCT: Computer Science & Software Engineering (CSCE)","AST02.01","Theory of Computation","Prof. Phan Minh Dung","CS106","983 2744 1841","197088","https://ait-ac-th.zoom.us/j/98327441841?pwd=GIS5zRRqhgTG4wZUfWAqSFVRCdmQvD.1"],
-
-["RSGIS: Remote Sensing & Geographic Information Systems","AST03.01","Geographic Information System","Prof. Nitin K. Tripathi","E233 & E233 [Lab]","912 2936 3369","363822","https://ait-ac-th.zoom.us/j/91229363369?pwd=GPx5u1JwOp9p2HlwDDZd8aP23Ty7oS.1"],
-["RSGIS: Remote Sensing & Geographic Information Systems","AST03.08","GIS for Health","Prof. Nitin K. Tripathi","E233","936 2270 1265","192583","https://ait-ac-th.zoom.us/j/93622701265?pwd=KzFX6CWANz76rXZM6FXRLDWbYGmiGb.1"],
-["RSGIS: Remote Sensing & Geographic Information Systems","AST03.02","Remote Sensing","Dr. Salvatore G. P. Virdis","W202","982 3981 8339","526246","https://ait-ac-th.zoom.us/j/98239818339?pwd=QanV6tJn500U2jOQE0XFpbtkrrutwa.1"],
-["RSGIS: Remote Sensing & Geographic Information Systems","AST03.03","Introduction to Python in Environmental Data Analysis","Dr. Salvatore G. P. Virdis","W202","988 1494 6037","835442","https://ait-ac-th.zoom.us/j/98814946037?pwd=JaebJsOCmLBclgzfqYxulrHfZbjh02.1"],
-["RSGIS: Remote Sensing & Geographic Information Systems","AST03.06","Web GIS Technology","Dr. Sarawut Ninsawat","W202","970 6241 7360","409292","https://ait-ac-th.zoom.us/j/97062417360?pwd=vOsBib3u8jUXnZ1AZqvjYDVx1Kzf0i.1"],
-["RSGIS: Remote Sensing & Geographic Information Systems","AST03.15","Introduction to Global Navigation Satellite Systems","Dr. Sanit Arunplod","W202","950 5239 7799","190556","https://ait-ac-th.zoom.us/j/95052397799?pwd=uMwWQS51bie9A3mYya5YjAKajAhsau.1"],
-["RSGIS: Remote Sensing & Geographic Information Systems","AST03.18","Geospatial Transformation & Digital Surveying Technologies","Dr. Phisan Santitamnont & Dr. Sanit Arunplod","W202","913 4096 2882","471839","https://ait-ac-th.zoom.us/j/91340962882?pwd=am8BQRAThaW1NKlGG0Vfr1tVGx1Fc1.1"],
-
-["ISE: AIoT","AST01.47","Wireless Technologies for Internet of Things","Prof. Attaphongse Taparugssanagorn","TC101","946 5965 9828","927562","https://ait-ac-th.zoom.us/j/94659659828?pwd=Ol47mL7F73FIab59yPWZb3Wnl8z4Df.1"],
-["ISE: AIoT","AST01.43","Information and Communication Technology User-Centric Technology Design","Dr. Teerawat Issariyakul","TC103","926 5151 8765","822450","https://ait-ac-th.zoom.us/j/92651518765?pwd=EnLsUwqqd1XHZvYFXF6cHUjIJVtIJH.1"],
-["ISE: AIoT","AST01.41","Fundamentals of Internet of Things and Cloud Computing","Dr. Nisit Pukrongta","TC203","912 2671 4686","552775","https://ait-ac-th.zoom.us/j/91226714686?pwd=rv4DkFmkRaDqDIikNi5JJx8i2nPK2F.1"],
-
-["ISE: Biomedical Engineering (BME)","AST01.36","Medical Instrumentation and Imaging","Dr. Branesh Pillai","NANO","921 0877 7124","404740","https://ait-ac-th.zoom.us/j/92108777124?pwd=moi9UU2jTTS7f2VvfUBQCrg190OvIa.1"],
-["ISE: Biomedical Engineering (BME)","AST01.34","Physiology for Medical Engineering","Prof. Cdr. Sorayouth Chumnanvej & Dr. Branesh Pillai","NANO","930 8590 8673","871750","https://ait-ac-th.zoom.us/j/93085908673?pwd=vLvd0Z4HNcDi5TnCFScS9YSqHFRlOP.1"],
-["ISE: Biomedical Engineering (BME)","AST01.901","Materials and Mechanics in Medicine Laboratory","Dr. Branesh Pillai","NANO","979 2873 6178","675896","https://ait-ac-th.zoom.us/j/97928736178?pwd=moIcC8bIPtWKBxNI1LS5Rb4jIoAVSg.1"],
-["ISE: Biomedical Engineering (BME)","AST01.29","Fundamentals of Bionanotechnology","Dr. M. J. Khan","NANO","937 3680 2930","118391","https://ait-ac-th.zoom.us/j/93736802930?pwd=5lMavSfwkmlbY3uH0k5WqogBkiKBpU.1"],
-
-["ISE: Mechatronics and Machine Intelligence (MMI)","AST01.14","Kinematics and Dynamics of Mechanisms and Robots","Dr. Wiput Tuvayanond","ISE106 & ISE106 [Lab]","973 9893 3540","487406","https://ait-ac-th.zoom.us/j/97398933540?pwd=im0VWkbCiyK1U9ibG8ODTyaVG2JWe6.1"],
-["ISE: Mechatronics and Machine Intelligence (MMI)","AST01.18","Control Theory","Dr. Wiput Tuvayanond","ISE106","994 9907 1478","454370","https://ait-ac-th.zoom.us/j/99499071478?pwd=J6y5ySMfbjwlOZpnZgPej2lvNuuFuI.1"],
-["ISE: Mechatronics and Machine Intelligence (MMI)","AST01.38","Deep Learning for Computer Vision","Prof. Mongkol Ekpanyapong","ISE106 & ISE106 [Lab]","960 5437 7824","374732","https://ait-ac-th.zoom.us/j/96054377824?pwd=koj1xUZAOEtHDHTjuB2LnNzlVYnOjp.1"],
-
-["ISE: Semiconductor Engineering (SCE)","AST01.26","Embedded Systems Architecture","Prof. Mongkol Ekpanyapong","ISE106","944 8746 2030","302762","https://ait-ac-th.zoom.us/j/94487462030?pwd=vPMf372WFWnXEk6Ht2XSk32YzjwXQD.1"],
-["ISE: Semiconductor Engineering (SCE)","AST01.20","Microelectronics Fabrication Technology","Dr. Chanchana Thanachayanont","ISE106","924 5555 0615","926954","https://ait-ac-th.zoom.us/j/92455550615?pwd=an3fR0fJ53Gac0SeBdsiZxBL22fahr.1"],
-["ISE: Semiconductor Engineering (SCE)","AST01.24","VLSI Design","Dr. Pruek Vannaiampikul","ISE106","957 0560 4947","463853","https://ait-ac-th.zoom.us/j/95705604947?pwd=L8tpmvmQ8bg8gQoDI4yaNQH1dX2rbm.1"],
-
-["ISE: Industrial and Manufacturing Engineering (IME)","AST01.02","Statistical Models and Design of Experiments","Prof. Huynh Trung Luong","ISE115","981 7865 5491","144146","https://ait-ac-th.zoom.us/j/98178655491?pwd=N4uLA5i0zmmMxKPBF94THSlQ48tD4c.1"],
-["ISE: Industrial and Manufacturing Engineering (IME)","AST01.03","Quality Control and Management","Dr. Chumpol Yuangyai","ISE115","932 6165 2953","103146","https://ait-ac-th.zoom.us/j/93261652953?pwd=d6sba15H2Ixm9aRi8dwy2F9NL61DMv.1"],
-["ISE: Industrial and Manufacturing Engineering (IME)","AST01.10","Additive Manufacturing and Reverse Engineering","Dr. Pisut Koomsap","ISE235","956 0887 3783","244146","https://ait-ac-th.zoom.us/j/95608873783?pwd=SIT5wux24mGrFsaQpXJB3eFfw32iMB.1"],
-["ISE: Industrial and Manufacturing Engineering (IME)","AST01.13","Communications & People Skills Development for Engineering Leaders","Dr. Pisut Koomsap","ISE235","964 3196 4002","344146","https://ait-ac-th.zoom.us/j/96431964002?pwd=dztywZOtidQxQ9AGfR8qAMkTKpgqCb.1"]
-].map(r => ({Group:r[0], Code:r[1], "Course Name":r[2], Instructor:r[3], Room:r[4], "Zoom ID":r[5], Password:r[6], "Direct Link":r[7]}));
 
 /* ---------------- Rendering ---------------- */
 const board = document.getElementById('board');
@@ -448,6 +535,8 @@ const statusPill = document.getElementById('statusPill');
 const statusText = document.getElementById('statusText');
 
 let rows = [];
+let currentUserEmail = '';
+let currentAccessToken = '';
 
 function groupRows(data){
   const groups = [];
@@ -547,36 +636,15 @@ board.addEventListener('click', e => {
   });
 });
 
-/* ---------------- Data loading ---------------- */
 function setStatus(text, isFallback){
   statusText.textContent = text;
   statusPill.classList.toggle('fallback', !!isFallback);
 }
 
-function boot(data, fallback){
+function boot(data){
   rows = data;
   populateFilter(groupRows(rows));
   render();
-  setStatus(fallback ? 'Showing built-in schedule' : 'Live from Google Sheet', fallback);
-}
-
-if(CONFIG.sheetCsvUrl){
-  setStatus('Loading from Google Sheet…');
-  Papa.parse(CONFIG.sheetCsvUrl, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: results => {
-      if(results.data && results.data.length && results.data[0].Code){
-        boot(results.data, false);
-      } else {
-        boot(FALLBACK_DATA, true);
-      }
-    },
-    error: () => boot(FALLBACK_DATA, true)
-  });
-} else {
-  boot(FALLBACK_DATA, true);
 }
 
 /* ---------------- Clock ---------------- */
@@ -587,38 +655,126 @@ function tick(){
 }
 tick();
 setInterval(tick, 1000);
-document.getElementById('buildDate') && (document.getElementById('buildDate').textContent = new Date().toISOString().slice(0,10));
 
-/* ---------------- Visit tracking ---------------- */
-function logVisit(){
-  const countEl = document.getElementById('visitCount');
-  const linkEl = document.getElementById('viewLogLink');
+/* ---------------- Auth (Google Sign-In + rate-limited proxy) ---------------- */
+const authOverlay = document.getElementById('authOverlay');
+const appContent = document.getElementById('appContent');
+const signInBtn = document.getElementById('signInBtn');
+const authError = document.getElementById('authError');
+let tokenClient;
 
-  if(VISIT_CONFIG.viewUrl){
-    linkEl.href = VISIT_CONFIG.viewUrl;
-  } else {
-    linkEl.style.display = 'none';
-  }
+function showAuthError(msg){
+  authError.textContent = msg;
+  authError.hidden = false;
+}
 
-  if(!VISIT_CONFIG.logUrl){
-    countEl.textContent = 'not configured';
+function initAuth(){
+  if(!AUTH_CONFIG.googleClientId || !DATA_CONFIG.dataApiUrl){
+    signInBtn.textContent = 'Not configured';
+    showAuthError('This directory has not been connected yet. See AUTH_CONFIG / DATA_CONFIG in the page source.');
     return;
   }
-
-  const params = new URLSearchParams({
-    page: location.pathname,
-    ref: document.referrer || 'direct',
-    ua: navigator.userAgent,
-    lang: navigator.language,
-    screen: `${screen.width}x${screen.height}`
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: AUTH_CONFIG.googleClientId,
+    scope: 'https://www.googleapis.com/auth/userinfo.email',
+    callback: handleTokenResponse
   });
-
-  fetch(`${VISIT_CONFIG.logUrl}?${params.toString()}`)
-    .then(r => r.json())
-    .then(data => { countEl.textContent = data.count ?? '—'; })
-    .catch(() => { countEl.textContent = '—'; });
+  signInBtn.textContent = 'Sign in with Google';
+  signInBtn.disabled = false;
+  signInBtn.addEventListener('click', () => {
+    authError.hidden = true;
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+  });
 }
-logVisit();
+
+async function handleTokenResponse(resp){
+  if(resp.error){
+    showAuthError('Sign-in failed or was cancelled. Please try again.');
+    return;
+  }
+  currentAccessToken = resp.access_token;
+  await loadFromProxy(currentAccessToken);
+}
+
+async function loadFromProxy(token){
+  try{
+    const params = new URLSearchParams({
+      token,
+      page: location.pathname,
+      ref: document.referrer || 'direct',
+      ua: navigator.userAgent
+    });
+    const res = await fetch(`${DATA_CONFIG.dataApiUrl}?${params.toString()}`);
+    if(!res.ok){
+      throw new Error('Proxy error ' + res.status);
+    }
+    const data = await res.json();
+
+    if(data.error === 'domain_not_allowed'){
+      showAuthError(`This directory is restricted to @${AUTH_CONFIG.allowedDomain} accounts. Please sign in with your AIT account.`);
+      return;
+    }
+    if(data.error === 'rate_limited'){
+      showAuthError('Too many requests from your account in a short time. Please wait a bit and try again.');
+      return;
+    }
+    if(data.error === 'invalid_token' || data.error === 'missing_token'){
+      showAuthError('Could not verify your sign-in. Please try again.');
+      return;
+    }
+
+    const values = data.values || [];
+    if(values.length < 2){
+      showAuthError('The schedule loaded but appears to be empty.');
+      return;
+    }
+    const [header, ...body] = values;
+    const rowsData = body
+      .filter(r => r.length && r[0])
+      .map(r => {
+        const obj = {};
+        header.forEach((h, i) => { obj[h.trim()] = r[i] || ''; });
+        return obj;
+      });
+
+    // Decode the visitor's own email from the token for display only
+    try{
+      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const userInfo = await userInfoRes.json();
+      currentUserEmail = userInfo.email || '';
+    } catch(e){ /* non-fatal, just for the header label */ }
+
+    authOverlay.style.display = 'none';
+    appContent.style.display = 'block';
+    document.getElementById('signedInAs').innerHTML =
+      `Signed in as ${escapeHtml(currentUserEmail)} · <button onclick="location.reload()">sign out</button>`;
+
+    boot(rowsData);
+    setStatus('Live · access verified', false);
+    if(DATA_CONFIG.viewUrl){
+      document.getElementById('viewLogLink').href = DATA_CONFIG.viewUrl;
+    } else {
+      document.getElementById('viewLogLink').style.display = 'none';
+    }
+    document.getElementById('visitCount').textContent = data.count ?? '—';
+  } catch(err){
+    showAuthError('Could not load the schedule. Please try again or contact the administrator.');
+  }
+}
+
+window.onload = () => {
+  // google.accounts is loaded async; poll briefly until ready
+  const tryInit = () => {
+    if(window.google && google.accounts && google.accounts.oauth2){
+      initAuth();
+    } else {
+      setTimeout(tryInit, 150);
+    }
+  };
+  tryInit();
+};
 </script>
 </body>
 </html>
