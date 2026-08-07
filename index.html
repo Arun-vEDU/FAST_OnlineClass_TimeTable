@@ -108,6 +108,28 @@
     font-size: 0.68rem;
     line-height: 1.5;
   }
+  .auth-loading{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    color: var(--muted);
+    font-size: 0.82rem;
+    padding: 0.75rem 0;
+  }
+  .spinner{
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--rule);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){
+    .spinner{ animation: none; border-top-color: var(--rule); }
+  }
   #appContent{ display:none; }
 
   /* ---------- Header ---------- */
@@ -379,7 +401,14 @@
     <div class="auth-eyebrow">Restricted Access</div>
     <h2>AIT-FAST Zoom Directory</h2>
     <p class="auth-copy">Meeting IDs, passwords, and join links are restricted to AIT accounts. Sign in with your <strong>@ait.asia</strong> AIT account to continue.</p>
+
     <button class="auth-signin-btn" id="signInBtn" disabled>Loading sign-in…</button>
+
+    <div class="auth-loading" id="authLoading" hidden>
+      <span class="spinner"></span>
+      <span id="authLoadingText">Verifying your account…</span>
+    </div>
+
     <div class="auth-error" id="authError" hidden></div>
     <div class="auth-note">Contact arunya@ait.asia.</div>
   </div>
@@ -661,9 +690,24 @@ const authOverlay = document.getElementById('authOverlay');
 const appContent = document.getElementById('appContent');
 const signInBtn = document.getElementById('signInBtn');
 const authError = document.getElementById('authError');
+const authLoading = document.getElementById('authLoading');
+const authLoadingText = document.getElementById('authLoadingText');
 let tokenClient;
 
+function showLoading(text){
+  authError.hidden = true;
+  signInBtn.style.display = 'none';
+  authLoadingText.textContent = text;
+  authLoading.hidden = false;
+}
+
+function hideLoading(){
+  authLoading.hidden = true;
+  signInBtn.style.display = 'inline-flex';
+}
+
 function showAuthError(msg){
+  hideLoading();
   authError.textContent = msg;
   authError.hidden = false;
 }
@@ -682,7 +726,7 @@ function initAuth(){
   signInBtn.textContent = 'Sign in with AIT email';
   signInBtn.disabled = false;
   signInBtn.addEventListener('click', () => {
-    authError.hidden = true;
+    showLoading('Opening Google sign-in…');
     tokenClient.requestAccessToken({ prompt: 'consent' });
   });
 }
@@ -693,11 +737,13 @@ async function handleTokenResponse(resp){
     return;
   }
   currentAccessToken = resp.access_token;
+  showLoading('Verifying your account…');
   await loadFromProxy(currentAccessToken);
 }
 
 async function loadFromProxy(token){
   try{
+    showLoading('Loading class schedule…');
     const params = new URLSearchParams({
       token,
       page: location.pathname,
@@ -736,6 +782,8 @@ async function loadFromProxy(token){
         header.forEach((h, i) => { obj[h.trim()] = r[i] || ''; });
         return obj;
       });
+
+    showLoading('Almost there…');
 
     // Decode the visitor's own email from the token for display only
     try{
