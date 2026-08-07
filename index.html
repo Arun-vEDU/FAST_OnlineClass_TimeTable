@@ -438,7 +438,7 @@
   <select id="groupFilter">
     <option value="">All programs</option>
   </select>
-  <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Loading schedule…</span></div>
+  <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Loading directory…</span></div>
 </div>
 
 <main id="board"></main>
@@ -737,7 +737,7 @@ async function handleTokenResponse(resp){
     return;
   }
   currentAccessToken = resp.access_token;
-  showLoading('Verifying your account…');
+  showLoading('Waiting for Sign in…');
   await loadFromProxy(currentAccessToken);
 }
 
