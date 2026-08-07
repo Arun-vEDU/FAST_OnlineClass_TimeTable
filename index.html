@@ -402,6 +402,833 @@
     <h2>AIT-FAST Zoom Directory</h2>
     <p class="auth-copy">Meeting IDs, passwords, and join links are restricted to AIT accounts. Sign in with your <strong>@ait.asia</strong> AIT account to continue.</p>
 
+    <button class="auth-signin-btn" id="signInBtn" disabled>Loading sign-in…</button>
+
+    <div class="auth-loading" id="authLoading" hidden>
+      <span class="spinner"></span>
+      <span id="authLoadingText">Verifying your account…</span>
+    </div>
+
+    <div class="auth-error" id="authError" hidden></div>
+    <div class="auth-note">Contact arunya@ait.asia.</div>
+  </div>
+</div>
+
+<div id="appContent">
+<header>
+  <div class="header-row">
+    <div>
+      <div class="eyebrow">Faculty of Advanced Science & Technology &middot; AIT</div>
+      <h1>Zoom Class Directory</h1>
+      <div class="sub">Live meeting links, IDs and passwords for FAST classes. Search by code, course, or instructor — or click straight through to join.</div>
+      <div class="signed-in-as" id="signedInAs"></div>
+    </div>
+    <div class="board-clock">
+      <div>BANGKOK (GMT+7)</div>
+      <div class="time" id="clock">--:--:--</div>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="search" id="searchInput" placeholder="Search code, course, or instructor…" autocomplete="off">
+  </div>
+  <select id="groupFilter">
+    <option value="">All programs</option>
+  </select>
+  <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Loading schedule…</span></div>
+</div>
+
+<main id="board"></main>
+
+<footer>
+  Asian Institute of Technology, Faculty of Advanced Science and Technology.
+  Contact Arunya P. Senadeera S. D. at arunya@ait.ac.th for details.
+  <div class="visit-stats">
+    <span class="eye">&#128065;</span>
+    <span id="visitCount">—</span> visits recorded
+    <span class="sep">·</span>
+    <a id="viewLogLink" href="#" target="_blank" rel="noopener">view visitor log</a>
+  </div>
+</footer>
+</div>
+
+<script>
+/* ============================================================
+   AUTH CONFIG — Google Sign-In only needs to confirm identity
+   here; the actual data lives behind a rate-limited proxy (see
+   DATA_CONFIG below), not fetched directly from the client.
+
+   Setup:
+   1. Google Cloud Console → Credentials → Create OAuth client ID
+      (Web application) → add this page's origin (e.g.
+      https://you.github.io) under Authorized JavaScript origins
+      → copy the Client ID below. You do NOT need to enable the
+      Sheets API for this project — the proxy handles that.
+   ============================================================ */
+const AUTH_CONFIG = {
+  googleClientId: "534292229555-i9vs7h8ui2d6uo899up4mrnf6tptdakl.apps.googleusercontent.com",              // OAuth 2.0 Client ID from Google Cloud Console
+  allowedDomain: "ait.asia"        // Only accounts on this Workspace domain will pass the client-side check
+};
+
+/* ============================================================
+   DATA_CONFIG — a single Apps Script Web App that:
+     (a) verifies the visitor's Google token server-side,
+     (b) checks their email domain,
+     (c) rate-limits requests per person (real bot mitigation —
+         this is the part a direct Sheets API call cannot do),
+     (d) logs the access, and
+     (e) returns the course data.
+
+   Because the script runs with its own access to the
+   spreadsheet, you do NOT need to share the Sheet with every
+   viewer individually — access is controlled entirely by the
+   checks inside the script below.
+
+   Setup:
+   1. In your Sheet, keep your course data on a tab (default
+      name "Sheet1" below — change DATA_SHEET_NAME if different)
+      with header row: Group | Code | Course Name | Instructor |
+      Room | Zoom ID | Password | Direct Link
+   2. Add a second tab named exactly "Visits" with header row:
+      Timestamp | Email | Page | Referrer | Browser
+   3. Extensions → Apps Script, replace the code with:
+
+        const ALLOWED_DOMAIN = 'ait.asia';
+        const DATA_SHEET_NAME = 'Sheet1';
+        const RATE_LIMIT_PER_HOUR = 40;
+
+        function doGet(e) {
+          const token = e.parameter.token;
+          if (!token) return json({ error: 'missing_token' });
+
+          const infoResp = UrlFetchApp.fetch(
+            'https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + encodeURIComponent(token),
+            { muteHttpExceptions: true }
+          );
+          if (infoResp.getResponseCode() !== 200) return json({ error: 'invalid_token' });
+
+          const info = JSON.parse(infoResp.getContentText());
+          const email = info.email || '';
+          if (!email.endsWith('@' + ALLOWED_DOMAIN)) return json({ error: 'domain_not_allowed' });
+
+          const props = PropertiesService.getScriptProperties();
+          const key = 'rl_' + email;
+          const now = Date.now();
+          const record = JSON.parse(props.getProperty(key) || '{"count":0,"reset":0}');
+          if (now > record.reset) { record.count = 0; record.reset = now + 3600000; }
+          record.count++;
+          props.setProperty(key, JSON.stringify(record));
+          if (record.count > RATE_LIMIT_PER_HOUR) return json({ error: 'rate_limited' });
+
+          const ss = SpreadsheetApp.getActiveSpreadsheet();
+          const visits = ss.getSheetByName('Visits');
+          if (visits) {
+            visits.appendRow([new Date(), email, e.parameter.page || '', e.parameter.ref || '', e.parameter.ua || '']);
+          }
+
+          const values = ss.getSheetByName(DATA_SHEET_NAME).getDataRange().getValues();
+          return json({ values: values, count: visits ? visits.getLastRow() - 1 : null });
+        }
+
+        function json(obj) {
+          return ContentService.createTextOutput(JSON.stringify(obj))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+
+   4. Deploy → New deployment → Web app → Execute as "Me",
+      Who has access "Anyone" → Deploy. Copy the /exec URL below
+      as dataApiUrl.
+   5. (Optional) Publish the "Visits" tab to web, paste that link
+      as viewUrl for your own review link in the footer.
+
+   Notes:
+   - RATE_LIMIT_PER_HOUR resets on redeploy (PropertiesService
+     persists otherwise). Raise/lower it to taste.
+   - This stops bulk/automated pulls, even from a valid AIT
+     account. It cannot stop a person from manually copying what
+     they can already see on screen — no client-facing app can.
+   ============================================================ */
+const DATA_CONFIG = {
+  dataApiUrl: "https://script.google.com/a/macros/ait.asia/s/AKfycbzdhFiKEwP-CoFgTWMeNfHu0x4g-TAN1HMybD2BMFP97GKociPlnX2umrc2bi5fwEGC/exec", // e.g. "https://script.google.com/a/macros/ait.asia/s/AKfycbzdhFiKEwP-CoFgTWMeNfHu0x4g-TAN1HMybD2BMFP97GKociPlnX2umrc2bi5fwEGC/exec"
+  viewUrl: ""     // link to the published "Visits" tab, for your own review
+};
+
+/* ---------------- Rendering ---------------- */
+const board = document.getElementById('board');
+const groupFilter = document.getElementById('groupFilter');
+const searchInput = document.getElementById('searchInput');
+const statusPill = document.getElementById('statusPill');
+const statusText = document.getElementById('statusText');
+
+let rows = [];
+let currentUserEmail = '';
+let currentAccessToken = '';
+
+function groupRows(data){
+  const groups = [];
+  const index = new Map();
+  data.forEach(r => {
+    const g = (r.Group || 'Ungrouped').trim();
+    if(!index.has(g)){
+      index.set(g, { name: g, items: [] });
+      groups.push(index.get(g));
+    }
+    index.get(g).items.push(r);
+  });
+  return groups;
+}
+
+function populateFilter(groups){
+  groupFilter.innerHTML = '<option value="">All programs</option>' +
+    groups.map(g => `<option value="${escapeAttr(g.name)}">${escapeHtml(g.name)}</option>`).join('');
+}
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+function render(){
+  const q = searchInput.value.trim().toLowerCase();
+  const activeGroup = groupFilter.value;
+  const groups = groupRows(rows);
+  board.innerHTML = '';
+
+  let shown = 0;
+  let delay = 0;
+
+  groups.forEach(g => {
+    if(activeGroup && g.name !== activeGroup) return;
+
+    const filtered = g.items.filter(r => {
+      if(!q) return true;
+      const hay = `${r.Code} ${r["Course Name"]} ${r.Instructor}`.toLowerCase();
+      return hay.includes(q);
+    });
+    if(filtered.length === 0) return;
+
+    const section = document.createElement('div');
+    section.className = 'concourse';
+
+    const title = document.createElement('div');
+    title.className = 'concourse-title';
+    title.innerHTML = `<span class="code">${escapeHtml(g.name.split(':')[0])}</span><span class="label">${escapeHtml(g.name.split(':').slice(1).join(':').trim())}</span>`;
+    section.appendChild(title);
+
+    const head = document.createElement('div');
+    head.className = 'board-head';
+    head.innerHTML = `<div>Code</div><div>Course</div><div>Instructor</div><div>Room</div><div>Zoom ID</div><div>Password</div><div></div>`;
+    section.appendChild(head);
+
+    filtered.forEach(r => {
+      shown++;
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.style.animationDelay = `${Math.min(delay, 500)}ms`;
+      delay += 12;
+
+      const link = r["Direct Link"] || '#';
+      row.innerHTML = `
+        <div class="code-cell">${escapeHtml(r.Code)}</div>
+        <div><a class="course-link" href="${escapeAttr(link)}" target="_blank" rel="noopener">${escapeHtml(r["Course Name"])}</a></div>
+        <div class="instructor-cell">${escapeHtml(r.Instructor)}</div>
+        <div class="room-cell">${escapeHtml(r.Room)}</div>
+        <div class="zoomid-cell">${escapeHtml(r["Zoom ID"])} <button class="copy-btn" data-copy="${escapeAttr((r["Zoom ID"]||'').replace(/\s/g,''))}">copy</button></div>
+        <div class="pwd-cell">${escapeHtml(r.Password)} <button class="copy-btn" data-copy="${escapeAttr(r.Password)}">copy</button></div>
+        <div class="join-cell"><a class="join-btn" href="${escapeAttr(link)}" target="_blank" rel="noopener">Join →</a></div>
+      `;
+      section.appendChild(row);
+    });
+
+    board.appendChild(section);
+  });
+
+  if(shown === 0){
+    board.innerHTML = `<div class="empty-state">No classes match “${escapeHtml(q)}”. Try a course code, name, or instructor.</div>`;
+  }
+}
+
+searchInput.addEventListener('input', render);
+groupFilter.addEventListener('change', render);
+
+board.addEventListener('click', e => {
+  const btn = e.target.closest('.copy-btn');
+  if(!btn) return;
+  navigator.clipboard.writeText(btn.dataset.copy).then(() => {
+    btn.classList.add('copied');
+    const original = btn.textContent;
+    btn.textContent = '✓';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = original; }, 1200);
+  });
+});
+
+function setStatus(text, isFallback){
+  statusText.textContent = text;
+  statusPill.classList.toggle('fallback', !!isFallback);
+}
+
+function boot(data){
+  rows = data;
+  populateFilter(groupRows(rows));
+  render();
+}
+
+/* ---------------- Clock ---------------- */
+function tick(){
+  const now = new Date();
+  const bkk = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+  document.getElementById('clock').textContent = bkk.toLocaleTimeString('en-GB');
+}
+tick();
+setInterval(tick, 1000);
+
+/* ---------------- Auth (Google Sign-In + rate-limited proxy) ---------------- */
+const authOverlay = document.getElementById('authOverlay');
+const appContent = document.getElementById('appContent');
+const signInBtn = document.getElementById('signInBtn');
+const authError = document.getElementById('authError');
+const authLoading = document.getElementById('authLoading');
+const authLoadingText = document.getElementById('authLoadingText');
+let tokenClient;
+
+function showLoading(text){
+  authError.hidden = true;
+  signInBtn.style.display = 'none';
+  authLoadingText.textContent = text;
+  authLoading.hidden = false;
+}
+
+function hideLoading(){
+  authLoading.hidden = true;
+  signInBtn.style.display = 'inline-flex';
+}
+
+function showAuthError(msg){
+  hideLoading();
+  authError.textContent = msg;
+  authError.hidden = false;
+}
+
+function initAuth(){
+  if(!AUTH_CONFIG.googleClientId || !DATA_CONFIG.dataApiUrl){
+    signInBtn.textContent = 'Not configured';
+    showAuthError('This directory has not been connected yet. See AUTH_CONFIG / DATA_CONFIG in the page source.');
+    return;
+  }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: AUTH_CONFIG.googleClientId,
+    scope: 'https://www.googleapis.com/auth/userinfo.email',
+    callback: handleTokenResponse
+  });
+  signInBtn.textContent = 'Sign in with AIT email';
+  signInBtn.disabled = false;
+  signInBtn.addEventListener('click', () => {
+    showLoading('Opening Google sign-in…');
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+  });
+}
+
+async function handleTokenResponse(resp){
+  if(resp.error){
+    showAuthError('Sign-in failed or was cancelled. Please try again.');
+    return;
+  }
+  currentAccessToken = resp.access_token;
+  showLoading('Verifying your account…');
+  await loadFromProxy(currentAccessToken);
+}
+
+async function loadFromProxy(token){
+  try{
+    showLoading('Loading class schedule…');
+    const params = new URLSearchParams({
+      token,
+      page: location.pathname,
+      ref: document.referrer || 'direct',
+      ua: navigator.userAgent
+    });
+    const res = await fetch(`${DATA_CONFIG.dataApiUrl}?${params.toString()}`);
+    if(!res.ok){
+      throw new Error('Proxy error ' + res.status);
+    }
+    const data = await res.json();
+
+    if(data.error === 'domain_not_allowed'){
+      showAuthError(`This directory is restricted to @${AUTH_CONFIG.allowedDomain} accounts. Please sign in with your AIT account.`);
+      return;
+    }
+    if(data.error === 'rate_limited'){
+      showAuthError('Too many requests from your account in a short time. Please wait a bit and try again.');
+      return;
+    }
+    if(data.error === 'invalid_token' || data.error === 'missing_token'){
+      showAuthError('Could not verify your sign-in. Please try again.');
+      return;
+    }
+
+    const values = data.values || [];
+    if(values.length < 2){
+      showAuthError('The schedule loaded but appears to be empty.');
+      return;
+    }
+    const [header, ...body] = values;
+    const rowsData = body
+      .filter(r => r.length && r[0])
+      .map(r => {
+        const obj = {};
+        header.forEach((h, i) => { obj[h.trim()] = r[i] || ''; });
+        return obj;
+      });
+
+    showLoading('Almost there…');
+
+    // Decode the visitor's own email from the token for display only
+    try{
+      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const userInfo = await userInfoRes.json();
+      currentUserEmail = userInfo.email || '';
+    } catch(e){ /* non-fatal, just for the header label */ }
+
+    authOverlay.style.display = 'none';
+    appContent.style.display = 'block';
+    document.getElementById('signedInAs').innerHTML =
+      `Signed in as ${escapeHtml(currentUserEmail)} · <button onclick="location.reload()">sign out</button>`;
+
+    boot(rowsData);
+    setStatus('Live · access verified', false);
+    if(DATA_CONFIG.viewUrl){
+      document.getElementById('viewLogLink').href = DATA_CONFIG.viewUrl;
+    } else {
+      document.getElementById('viewLogLink').style.display = 'none';
+    }
+    document.getElementById('visitCount').textContent = data.count ?? '—';
+  } catch(err){
+    showAuthError('Could not load the schedule. Please try again or contact the administrator.');
+  }
+}
+
+window.onload = () => {
+  // google.accounts is loaded async; poll briefly until ready
+  const tryInit = () => {
+    if(window.google && google.accounts && google.accounts.oauth2){
+      initAuth();
+    } else {
+      setTimeout(tryInit, 150);
+    }
+  };
+  tryInit();
+};
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>FAST Concourse — AIT-FAST Zoom Class Directory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Archivo:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg: #060a14;
+    --panel: #0d1526;
+    --panel-2: #101b32;
+    --rule: #1c2a48;
+    --amber: #ffb400;
+    --amber-dim: #7a5c15;
+    --green: #35d68f;
+    --text: #e9edf7;
+    --muted: #7386ab;
+    --red: #ff5d5d;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,180,0,0.06), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(53,214,143,0.05), transparent 60%);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    min-height: 100vh;
+    padding-bottom: 4rem;
+  }
+  ::selection{ background: var(--amber); color:#141414; }
+
+  /* ---------- Auth overlay ---------- */
+  .auth-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(6,10,20,0.94);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1.5rem;
+  }
+  .auth-card{
+    max-width: 420px;
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+  }
+  .auth-eyebrow{
+    color: var(--amber);
+    letter-spacing: 0.28em;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  .auth-card h2{
+    font-family: 'Archivo', sans-serif;
+    font-size: 1.3rem;
+    margin: 0 0 0.75rem;
+  }
+  .auth-copy{
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+  .auth-signin-btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--amber);
+    color: #141414;
+    border: none;
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 0.75rem 1.4rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  .auth-signin-btn:hover{ background: #ffc233; }
+  .auth-signin-btn:disabled{ opacity: 0.5; cursor: not-allowed; }
+  .auth-error{
+    margin-top: 1rem;
+    color: var(--red);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    padding: 0.75rem;
+    border: 1px solid rgba(255,93,93,0.35);
+    border-radius: 4px;
+    background: rgba(255,93,93,0.08);
+  }
+  .auth-note{
+    margin-top: 1rem;
+    color: var(--muted);
+    font-size: 0.68rem;
+    line-height: 1.5;
+  }
+  .auth-loading{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    color: var(--muted);
+    font-size: 0.82rem;
+    padding: 0.75rem 0;
+  }
+  .spinner{
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--rule);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){
+    .spinner{ animation: none; border-top-color: var(--rule); }
+  }
+  #appContent{ display:none; }
+
+  /* ---------- Header ---------- */
+  header{
+    border-bottom: 1px solid var(--rule);
+    padding: 2rem 1.5rem 1.5rem;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  .eyebrow{
+    color: var(--amber);
+    letter-spacing: 0.28em;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  h1{
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    margin: 0.4rem 0 0.3rem;
+    letter-spacing: -0.01em;
+  }
+  .sub{
+    color: var(--muted);
+    font-size: 0.85rem;
+    max-width: 60ch;
+    line-height: 1.5;
+  }
+  .header-row{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .board-clock{
+    text-align: right;
+    color: var(--green);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+  }
+  .board-clock .time{
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--amber);
+    text-shadow: 0 0 12px rgba(255,180,0,0.35);
+  }
+  .signed-in-as{
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+  }
+  .signed-in-as button{
+    background:none; border:none; color: var(--amber); cursor:pointer;
+    font-family: inherit; font-size: 0.68rem; text-decoration: underline; padding:0;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    max-width: 1180px;
+    margin: 1.5rem auto 0;
+    padding: 0 1.5rem;
+    display:flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items:center;
+  }
+  .search-wrap{
+    flex: 1 1 260px;
+    position: relative;
+  }
+  .search-wrap svg{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    opacity:0.5; pointer-events:none;
+  }
+  input[type="search"]{
+    width:100%;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 0.75rem 0.9rem 0.75rem 2.3rem;
+    border-radius: 4px;
+    outline: none;
+  }
+  input[type="search"]:focus{
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(255,180,0,0.12);
+  }
+  select{
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 4px;
+    outline: none;
+  }
+  select:focus{ border-color: var(--amber); }
+  .status-pill{
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .status-pill .dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background: var(--green); margin-right:6px;
+  }
+  .status-pill.fallback .dot{ background: var(--amber); }
+
+  /* ---------- Board ---------- */
+  main{
+    max-width: 1180px;
+    margin: 2rem auto 0;
+    padding: 0 1.5rem;
+  }
+  .concourse{
+    margin-bottom: 2.25rem;
+  }
+  .concourse-title{
+    display:flex;
+    align-items:baseline;
+    gap: 0.6rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 0.5rem;
+  }
+  .concourse-title .code{
+    font-family:'Archivo', sans-serif;
+    font-weight:800;
+    color: var(--amber);
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+  }
+  .concourse-title .label{
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .board-head{
+    display:grid;
+    grid-template-columns: 90px minmax(180px,2.3fr) minmax(160px,1.6fr) 90px 130px 90px 70px;
+    gap: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .row{
+    display:grid;
+    grid-template-columns: 90px minmax(180px,2.3fr) minmax(160px,1.6fr) 90px 130px 90px 70px;
+    gap: 0.75rem;
+    align-items:center;
+    padding: 0.65rem 0.9rem;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    margin-bottom: 6px;
+    font-size: 0.83rem;
+    opacity: 0;
+    animation: flap-in 0.4s ease forwards;
+  }
+  .row:hover{ border-color: var(--amber-dim); background: var(--panel-2); }
+  @keyframes flap-in{
+    from{ opacity:0; transform: translateY(-4px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .row{ animation:none; opacity:1; }
+  }
+  .code-cell{ color: var(--amber); font-weight:600; }
+  .course-link{
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px dashed var(--amber-dim);
+    transition: border-color .15s, color .15s;
+  }
+  .course-link:hover{ color: var(--amber); border-color: var(--amber); }
+  .instructor-cell{ color: var(--muted); font-size: 0.78rem; }
+  .room-cell{ color: var(--green); font-size: 0.78rem; }
+  .zoomid-cell, .pwd-cell{
+    font-size: 0.78rem;
+    color: var(--muted);
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .copy-btn{
+    background:none;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    border-radius: 3px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .copy-btn:hover{ border-color: var(--amber); color: var(--amber); }
+  .copy-btn.copied{ border-color: var(--green); color: var(--green); }
+  .join-cell{ text-align:right; }
+  .join-btn{
+    display:inline-block;
+    background: var(--amber);
+    color: #141414;
+    font-weight: 700;
+    text-decoration:none;
+    font-size: 0.72rem;
+    padding: 5px 10px;
+    border-radius: 3px;
+    letter-spacing: 0.03em;
+  }
+  .join-btn:hover{ background: #ffc233; }
+
+  .empty-state{
+    text-align:center;
+    color: var(--muted);
+    padding: 3rem 1rem;
+    font-size: 0.85rem;
+    border: 1px dashed var(--rule);
+    border-radius: 6px;
+  }
+
+  /* ---------- mobile ---------- */
+  @media (max-width: 760px){
+    .board-head{ display:none; }
+    .row{
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+      padding: 0.85rem 0.9rem;
+    }
+    .join-cell{ text-align:left; margin-top: 4px; }
+  }
+
+  footer{
+    max-width: 1180px;
+    margin: 2rem auto 0;
+    padding: 1.25rem 1.5rem 0;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.6;
+  }
+  footer a{ color: var(--amber); }
+  .visit-stats{
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--rule);
+    display:flex;
+    align-items:center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .visit-stats .eye{ color: var(--green); }
+  .visit-stats #visitCount{ color: var(--amber); font-weight:600; }
+  .visit-stats .sep{ opacity:0.4; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN GATE ============ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-eyebrow">Restricted Access</div>
+    <h2>AIT-FAST Zoom Directory</h2>
+    <p class="auth-copy">Meeting IDs, passwords, and join links are restricted to AIT accounts. Sign in with your <strong>@ait.asia</strong> AIT account to continue.</p>
+
     <button class="auth-signin-btn" id="signInBtn" disabled>Waiting for sign-in…</button>
 
     <div class="auth-loading" id="authLoading" hidden>
