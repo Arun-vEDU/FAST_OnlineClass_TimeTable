@@ -2,827 +2,688 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex, nofollow, noarchive">
-<title>FAST Concourse — AIT-FAST Zoom Class Directory</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>Printask</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Archivo:wght@600;700;800&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Visitor counter (GoatCounter). Replace YOURCODE with your GoatCounter code. -->
+<script data-goatcounter="https://YOURCODE.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <style>
-  :root{
-    --bg: #060a14;
-    --panel: #0d1526;
-    --panel-2: #101b32;
-    --rule: #1c2a48;
-    --amber: #ffb400;
-    --amber-dim: #7a5c15;
-    --green: #35d68f;
-    --text: #e9edf7;
-    --muted: #7386ab;
-    --red: #ff5d5d;
+  :root {
+    --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; --sub: #6c6c70;
+    --sep: rgba(60, 60, 67, .16); --fill: #e9e9ee; --bar: rgba(242, 242, 247, .85);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500;
+    --radius: 18px;
   }
-  *{ box-sizing: border-box; }
-  html,body{ margin:0; padding:0; }
-  body{
-    background: var(--bg);
-    background-image:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,180,0,0.06), transparent 60%),
-      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(53,214,143,0.05), transparent 60%);
-    color: var(--text);
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
-    min-height: 100vh;
-    padding-bottom: 4rem;
-  }
-  ::selection{ background: var(--amber); color:#141414; }
-
-  /* ---------- Auth overlay ---------- */
-  .auth-overlay{
-    position: fixed;
-    inset: 0;
-    background: rgba(6,10,20,0.94);
-    backdrop-filter: blur(6px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    padding: 1.5rem;
-  }
-  .auth-card{
-    max-width: 420px;
-    width: 100%;
-    background: var(--panel);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    padding: 2rem;
-    text-align: center;
-  }
-  .auth-eyebrow{
-    color: var(--amber);
-    letter-spacing: 0.28em;
-    font-size: 0.68rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    margin-bottom: 0.6rem;
-  }
-  .auth-card h2{
-    font-family: 'Archivo', sans-serif;
-    font-size: 1.3rem;
-    margin: 0 0 0.75rem;
-  }
-  .auth-copy{
-    color: var(--muted);
-    font-size: 0.82rem;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-  }
-  .auth-signin-btn{
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    background: var(--amber);
-    color: #141414;
-    border: none;
-    font-weight: 700;
-    font-family: inherit;
-    font-size: 0.85rem;
-    padding: 0.75rem 1.4rem;
-    border-radius: 4px;
-    cursor: pointer;
-    letter-spacing: 0.02em;
-  }
-  .auth-signin-btn:hover{ background: #ffc233; }
-  .auth-signin-btn:disabled{ opacity: 0.5; cursor: not-allowed; }
-  .auth-error{
-    margin-top: 1rem;
-    color: var(--red);
-    font-size: 0.78rem;
-    line-height: 1.5;
-    padding: 0.75rem;
-    border: 1px solid rgba(255,93,93,0.35);
-    border-radius: 4px;
-    background: rgba(255,93,93,0.08);
-  }
-  .auth-note{
-    margin-top: 1rem;
-    color: var(--muted);
-    font-size: 0.68rem;
-    line-height: 1.5;
-  }
-  .auth-loading{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    color: var(--muted);
-    font-size: 0.82rem;
-    padding: 0.75rem 0;
-  }
-  .spinner{
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--rule);
-    border-top-color: var(--amber);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    flex-shrink: 0;
-  }
-  @keyframes spin{ to{ transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce){
-    .spinner{ animation: none; border-top-color: var(--rule); }
-  }
-  #appContent{ display:none; }
-
-  /* ---------- Header ---------- */
-  header{
-    border-bottom: 1px solid var(--rule);
-    padding: 2rem 1.5rem 1.5rem;
-    max-width: 1180px;
-    margin: 0 auto;
-  }
-  .eyebrow{
-    color: var(--amber);
-    letter-spacing: 0.28em;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-  h1{
-    font-family: 'Archivo', sans-serif;
-    font-weight: 800;
-    font-size: clamp(1.8rem, 4vw, 2.6rem);
-    margin: 0.4rem 0 0.3rem;
-    letter-spacing: -0.01em;
-  }
-  .sub{
-    color: var(--muted);
-    font-size: 0.85rem;
-    max-width: 60ch;
-    line-height: 1.5;
-  }
-  .header-row{
-    display:flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-  .board-clock{
-    text-align: right;
-    color: var(--green);
-    font-size: 0.78rem;
-    letter-spacing: 0.08em;
-  }
-  .board-clock .time{
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--amber);
-    text-shadow: 0 0 12px rgba(255,180,0,0.35);
-  }
-  .signed-in-as{
-    font-size: 0.68rem;
-    color: var(--muted);
-    margin-top: 0.3rem;
-  }
-  .signed-in-as button{
-    background:none; border:none; color: var(--amber); cursor:pointer;
-    font-family: inherit; font-size: 0.68rem; text-decoration: underline; padding:0;
-  }
-
-  /* ---------- Controls ---------- */
-  .controls{
-    max-width: 1180px;
-    margin: 1.5rem auto 0;
-    padding: 0 1.5rem;
-    display:flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    align-items:center;
-  }
-  .search-wrap{
-    flex: 1 1 260px;
-    position: relative;
-  }
-  .search-wrap svg{
-    position:absolute; left:12px; top:50%; transform:translateY(-50%);
-    opacity:0.5; pointer-events:none;
-  }
-  input[type="search"]{
-    width:100%;
-    background: var(--panel);
-    border: 1px solid var(--rule);
-    color: var(--text);
-    font-family: inherit;
-    font-size: 0.9rem;
-    padding: 0.75rem 0.9rem 0.75rem 2.3rem;
-    border-radius: 4px;
-    outline: none;
-  }
-  input[type="search"]:focus{
-    border-color: var(--amber);
-    box-shadow: 0 0 0 3px rgba(255,180,0,0.12);
-  }
-  select{
-    background: var(--panel);
-    border: 1px solid var(--rule);
-    color: var(--text);
-    font-family: inherit;
-    font-size: 0.85rem;
-    padding: 0.75rem 0.9rem;
-    border-radius: 4px;
-    outline: none;
-  }
-  select:focus{ border-color: var(--amber); }
-  .status-pill{
-    font-size: 0.7rem;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-  }
-  .status-pill .dot{
-    display:inline-block; width:6px; height:6px; border-radius:50%;
-    background: var(--green); margin-right:6px;
-  }
-  .status-pill.fallback .dot{ background: var(--amber); }
-
-  /* ---------- Board ---------- */
-  main{
-    max-width: 1180px;
-    margin: 2rem auto 0;
-    padding: 0 1.5rem;
-  }
-  .concourse{
-    margin-bottom: 2.25rem;
-  }
-  .concourse-title{
-    display:flex;
-    align-items:baseline;
-    gap: 0.6rem;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid var(--rule);
-    margin-bottom: 0.5rem;
-  }
-  .concourse-title .code{
-    font-family:'Archivo', sans-serif;
-    font-weight:800;
-    color: var(--amber);
-    font-size: 0.95rem;
-    letter-spacing: 0.04em;
-  }
-  .concourse-title .label{
-    color: var(--muted);
-    font-size: 0.85rem;
-  }
-  .board-head{
-    display:grid;
-    grid-template-columns: 90px minmax(180px,2.3fr) minmax(160px,1.6fr) 90px 130px 90px 70px;
-    gap: 0.75rem;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-  .row{
-    display:grid;
-    grid-template-columns: 90px minmax(180px,2.3fr) minmax(160px,1.6fr) 90px 130px 90px 70px;
-    gap: 0.75rem;
-    align-items:center;
-    padding: 0.65rem 0.9rem;
-    background: var(--panel);
-    border: 1px solid var(--rule);
-    border-radius: 4px;
-    margin-bottom: 6px;
-    font-size: 0.83rem;
-    opacity: 0;
-    animation: flap-in 0.4s ease forwards;
-  }
-  .row:hover{ border-color: var(--amber-dim); background: var(--panel-2); }
-  @keyframes flap-in{
-    from{ opacity:0; transform: translateY(-4px); }
-    to{ opacity:1; transform: translateY(0); }
-  }
-  @media (prefers-reduced-motion: reduce){
-    .row{ animation:none; opacity:1; }
-  }
-  .code-cell{ color: var(--amber); font-weight:600; }
-  .course-link{
-    color: var(--text);
-    text-decoration: none;
-    font-weight: 600;
-    border-bottom: 1px dashed var(--amber-dim);
-    transition: border-color .15s, color .15s;
-  }
-  .course-link:hover{ color: var(--amber); border-color: var(--amber); }
-  .instructor-cell{ color: var(--muted); font-size: 0.78rem; }
-  .room-cell{ color: var(--green); font-size: 0.78rem; }
-  .zoomid-cell, .pwd-cell{
-    font-size: 0.78rem;
-    color: var(--muted);
-    display:flex;
-    align-items:center;
-    gap: 6px;
-  }
-  .copy-btn{
-    background:none;
-    border: 1px solid var(--rule);
-    color: var(--muted);
-    border-radius: 3px;
-    font-size: 0.65rem;
-    padding: 2px 6px;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .copy-btn:hover{ border-color: var(--amber); color: var(--amber); }
-  .copy-btn.copied{ border-color: var(--green); color: var(--green); }
-  .join-cell{ text-align:right; }
-  .join-btn{
-    display:inline-block;
-    background: var(--amber);
-    color: #141414;
-    font-weight: 700;
-    text-decoration:none;
-    font-size: 0.72rem;
-    padding: 5px 10px;
-    border-radius: 3px;
-    letter-spacing: 0.03em;
-  }
-  .join-btn:hover{ background: #ffc233; }
-
-  .empty-state{
-    text-align:center;
-    color: var(--muted);
-    padding: 3rem 1rem;
-    font-size: 0.85rem;
-    border: 1px dashed var(--rule);
-    border-radius: 6px;
-  }
-
-  /* ---------- mobile ---------- */
-  @media (max-width: 760px){
-    .board-head{ display:none; }
-    .row{
-      grid-template-columns: 1fr;
-      gap: 0.3rem;
-      padding: 0.85rem 0.9rem;
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000; --card: #1c1c1e; --text: #f5f5f7; --sub: #98989f;
+      --sep: rgba(84, 84, 88, .65); --fill: #2c2c2e; --bar: rgba(0, 0, 0, .8);
     }
-    .join-cell{ text-align:left; margin-top: 4px; }
   }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Segoe UI", Roboto, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; padding-bottom: env(safe-area-inset-bottom);
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 16px 24px; }
 
-  footer{
-    max-width: 1180px;
-    margin: 2rem auto 0;
-    padding: 1.25rem 1.5rem 0;
-    border-top: 1px solid var(--rule);
-    color: var(--muted);
-    font-size: 0.72rem;
-    line-height: 1.6;
+  .topbar {
+    position: sticky; top: 0; z-index: 10; background: var(--bar);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: .5px solid var(--sep); padding-top: env(safe-area-inset-top);
   }
-  footer a{ color: var(--amber); }
-  .visit-stats{
-    margin-top: 0.6rem;
-    padding-top: 0.6rem;
-    border-top: 1px dashed var(--rule);
-    display:flex;
-    align-items:center;
-    gap: 0.5rem;
-    font-size: 0.72rem;
-    color: var(--muted);
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; padding-bottom: 10px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; background: var(--fill); border-radius: 999px; padding: 7px 12px; font-size: 14px; min-width: 0; }
+  .pill .text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #b0b0b5; flex: none; }
+  .dot.on { background: var(--green); box-shadow: 0 0 0 3px rgba(52, 199, 89, .2); }
+
+  h1 { font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin: 22px 0 2px; }
+  .sub { color: var(--sub); font-size: 15px; margin: 0 0 14px; }
+  h3 { font-size: 13px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: .04em; margin: 0 0 10px; }
+
+  .card { background: var(--card); border-radius: var(--radius); padding: 16px; margin: 14px 0; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04); }
+
+  .field {
+    width: 100%; border: 0; outline: none; border-radius: 12px; background: var(--fill); color: var(--text);
+    padding: 14px 16px; font: inherit; font-size: 17px; -webkit-appearance: none; appearance: none;
   }
-  .visit-stats .eye{ color: var(--green); }
-  .visit-stats #visitCount{ color: var(--amber); font-weight:600; }
-  .visit-stats .sep{ opacity:0.4; }
+  .field::placeholder { color: var(--sub); }
+  .field:focus { box-shadow: 0 0 0 3px rgba(0, 122, 255, .35); }
+
+  .opt-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: .5px solid var(--sep); font-size: 16px; }
+  .opt-row:last-of-type { border-bottom: 0; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--fill); border-radius: 999px; padding: 5px 11px; font-size: 14px; color: var(--sub); }
+
+  .seg { display: flex; background: var(--fill); border-radius: 10px; padding: 2px; gap: 2px; flex: 1; max-width: 280px; }
+  .opt { flex: 1; position: relative; }
+  .opt input { position: absolute; opacity: 0; pointer-events: none; }
+  .opt span { display: block; text-align: center; padding: 7px 6px; border-radius: 8px; font-size: 14px; cursor: pointer; user-select: none; }
+  .opt input:checked + span { background: var(--card); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.16); }
+  .opt input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+  .switch { position: relative; display: inline-block; width: 51px; height: 31px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .switch .track { position: absolute; inset: 0; background: var(--fill); border-radius: 31px; transition: background .2s; }
+  .switch .track::before {
+    content: ""; position: absolute; width: 27px; height: 27px; left: 2px; top: 2px;
+    background: #fff; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,.25); transition: transform .2s;
+  }
+  .switch input:checked + .track { background: var(--green); }
+  .switch input:checked + .track::before { transform: translateX(20px); }
+
+  .btn {
+    border: 0; border-radius: 13px; padding: 13px 18px; min-height: 46px;
+    font: 600 17px Inter, -apple-system, "Segoe UI", Arial, sans-serif;
+    background: var(--blue); color: #fff; cursor: pointer; transition: transform .08s, opacity .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(.97); opacity: .85; }
+  .btn.block { width: 100%; margin-top: 14px; }
+  .btn.gray { background: var(--fill); color: var(--blue); }
+  .btn.red { background: rgba(255, 59, 48, .12); color: var(--red); }
+  .btn.small { min-height: 34px; padding: 7px 13px; font-size: 14px; border-radius: 10px; }
+
+  .list-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .count { color: var(--sub); font-size: 14px; margin-bottom: 2px; }
+  .day { font-size: 13px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: .04em; margin: 16px 0 2px; }
+  .day:first-of-type { margin-top: 8px; }
+
+  .item { display: flex; gap: 14px; padding: 12px 0; border-bottom: .5px solid var(--sep); }
+  .item:last-child { border-bottom: 0; }
+  .check {
+    width: 28px; height: 28px; border-radius: 50%; border: 2px solid #c7c7cc; background: transparent;
+    flex: none; cursor: pointer; color: #fff; font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; padding: 0; transition: background .2s, border-color .2s;
+  }
+  .item.done .check { background: var(--green); border-color: var(--green); }
+  .body { flex: 1; min-width: 0; }
+  .title { font-size: 17px; font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
+  .item.done .title { color: var(--sub); text-decoration: line-through; }
+  .meta { font-size: 13px; color: var(--sub); margin-top: 3px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: var(--orange); border-radius: 6px; padding: 2px 6px; margin-left: 6px; vertical-align: 2px; }
+  .acts { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .empty { color: var(--sub); text-align: center; padding: 22px 0; margin: 0; font-size: 15px; }
+  .note { color: var(--sub); font-size: 13px; line-height: 1.45; margin: 12px 2px 0; }
+
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; display: flex; align-items: flex-end; justify-content: center; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  .sheet { background: var(--card); width: 100%; max-width: 560px; border-radius: 22px 22px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
+  .sheet h2 { font-size: 20px; font-weight: 700; margin: 0 0 12px; text-align: center; }
+  .sheet .row { display: flex; gap: 10px; margin-top: 14px; }
+  .sheet .row .btn { flex: 1; }
+
+  .footer { text-align: center; color: var(--sub); font-size: 13px; padding: 18px 0 8px; }
+  .footer b { color: var(--text); font-weight: 600; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(10px);
+    background: rgba(40, 40, 42, .94); color: #fff; padding: 12px 18px; border-radius: 14px; font-size: 15px;
+    opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; max-width: 88%; text-align: center; z-index: 30;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
-<!-- ============ LOGIN GATE ============ -->
-<div class="auth-overlay" id="authOverlay">
-  <div class="auth-card">
-    <div class="auth-eyebrow">Restricted Access</div>
-    <h2>AIT-FAST Zoom Directory</h2>
-    <p class="auth-copy">Meeting IDs, passwords, and join links are restricted to AIT accounts. Sign in with your <strong>@ait.asia</strong> AIT account to continue.</p>
-
-    <button class="auth-signin-btn" id="signInBtn" disabled>Loading sign-in…</button>
-
-    <div class="auth-loading" id="authLoading" hidden>
-      <span class="spinner"></span>
-      <span id="authLoadingText">Verifying your account…</span>
-    </div>
-
-    <div class="auth-error" id="authError" hidden></div>
-    <div class="auth-note">Contact arunya@ait.asia.</div>
+<div class="topbar">
+  <div class="wrap">
+    <span class="pill"><span id="dot" class="dot"></span><span id="ptxt" class="text">Printer off</span></span>
+    <button class="btn small" id="pbtn">Connect</button>
   </div>
 </div>
 
-<div id="appContent">
-<header>
-  <div class="header-row">
-    <div>
-      <div class="eyebrow">Faculty of Advanced Science & Technology &middot; AIT</div>
-      <h1>Zoom Class Directory</h1>
-      <div class="sub">Live meeting links, IDs and passwords for FAST classes. Search by code, course, or instructor — or click straight through to join.</div>
-      <div class="signed-in-as" id="signedInAs"></div>
-    </div>
-    <div class="board-clock">
-      <div>BANGKOK (GMT+7)</div>
-      <div class="time" id="clock">--:--:--</div>
-    </div>
-  </div>
-</header>
+<div class="wrap">
+  <h1>Printask</h1>
+  <p class="sub">Type a task and it prints on the office printer.</p>
 
-<div class="controls">
-  <div class="search-wrap">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="search" id="searchInput" placeholder="Search code, course, or instructor…" autocomplete="off">
+  <div class="card">
+    <input id="txt" class="field" type="text" placeholder="New task" autocomplete="off">
+    <div style="height:10px"></div>
+    <div class="opt-row"><span>Added from</span><span class="chip" id="devChip"></span></div>
+    <div class="opt-row">
+      <span>Priority</span>
+      <div class="seg">
+        <label class="opt"><input type="radio" name="pri" value="normal" checked><span>Normal</span></label>
+        <label class="opt"><input type="radio" name="pri" value="high"><span>High</span></label>
+      </div>
+    </div>
+    <div class="opt-row">
+      <span>Print now</span>
+      <label class="switch"><input id="prn" type="checkbox" checked><span class="track"></span></label>
+    </div>
+    <button class="btn block" id="addBtn">Add task</button>
+    <p class="note" id="browserNote"></p>
   </div>
-  <select id="groupFilter">
-    <option value="">All programs</option>
-  </select>
-  <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Loading schedule…</span></div>
+
+  <div class="card">
+    <h3>Print settings</h3>
+    <div class="opt-row">
+      <span>Font size</span>
+      <div class="seg">
+        <label class="opt"><input type="radio" name="fsize" value="small"><span>Small</span></label>
+        <label class="opt"><input type="radio" name="fsize" value="medium" checked><span>Medium</span></label>
+        <label class="opt"><input type="radio" name="fsize" value="large"><span>Large</span></label>
+      </div>
+    </div>
+    <div class="opt-row">
+      <span>Darkness</span>
+      <div class="seg">
+        <label class="opt"><input type="radio" name="dark" value="light"><span>Light</span></label>
+        <label class="opt"><input type="radio" name="dark" value="normal" checked><span>Normal</span></label>
+        <label class="opt"><input type="radio" name="dark" value="dark"><span>Dark</span></label>
+      </div>
+    </div>
+    <p class="note">Each printed task shows its date and time. Darkness changes how bold the print is; try Normal first.</p>
+  </div>
+
+  <div class="card">
+    <div class="list-head">
+      <h3 style="margin:0">Tasks</h3>
+      <button class="btn small gray" id="printOpen">Print open</button>
+    </div>
+    <div class="count" id="count"></div>
+    <div id="list"></div>
+  </div>
+
+  <div class="card">
+    <h3>Sticky note</h3>
+    <p class="note" style="margin:0 0 12px">Opens a small window that stays on top of your other windows, showing your open tasks. You can add and tick tasks there. Works in Chrome or Edge on a computer.</p>
+    <button class="btn block" id="stickyBtn">Open sticky note</button>
+  </div>
+
+  <div class="card">
+    <h3>Clean up</h3>
+    <div class="opt-row">
+      <span>Older than</span>
+      <div class="seg">
+        <label class="opt"><input type="radio" name="age" value="14" checked><span>2 weeks</span></label>
+        <label class="opt"><input type="radio" name="age" value="30"><span>1 month</span></label>
+        <label class="opt"><input type="radio" name="age" value="90"><span>3 months</span></label>
+      </div>
+    </div>
+    <div class="opt-row">
+      <span>Completed only</span>
+      <label class="switch"><input id="donly" type="checkbox"><span class="track"></span></label>
+    </div>
+    <button class="btn block red" id="cleanBtn">Delete old tasks</button>
+  </div>
+
+  <div class="card">
+    <button class="btn block gray" id="test">Test print</button>
+    <p class="note">Works in Chrome or Edge on a computer or Android phone. iPhone and iPad browsers cannot connect to Bluetooth printers from a web page. Tasks are saved on this device only.</p>
+  </div>
+
+  <div class="footer">Visitors: <b id="visitors">…</b></div>
 </div>
 
-<main id="board"></main>
-
-<footer>
-  Asian Institute of Technology, Faculty of Advanced Science and Technology.
-  Contact Arunya P. Senadeera S. D. at arunya@ait.ac.th for details.
-  <div class="visit-stats">
-    <span class="eye">&#128065;</span>
-    <span id="visitCount">—</span> visits recorded
-    <span class="sep">·</span>
-    <a id="viewLogLink" href="#" target="_blank" rel="noopener">view visitor log</a>
+<div id="sheet" class="overlay" hidden>
+  <div class="sheet">
+    <h2>Edit task</h2>
+    <input id="editTxt" class="field" type="text">
+    <div class="row">
+      <button class="btn gray" id="editCancel">Cancel</button>
+      <button class="btn" id="editSave">Save</button>
+    </div>
   </div>
-</footer>
 </div>
+
+<div id="toast" class="toast"></div>
 
 <script>
-/* ============================================================
-   AUTH CONFIG — Google Sign-In only needs to confirm identity
-   here; the actual data lives behind a rate-limited proxy (see
-   DATA_CONFIG below), not fetched directly from the client.
+const $ = id => document.getElementById(id);
+const KEY = 'printask-v4';
+const SKEY = KEY + '-settings';
+const GC_CODE = 'YOURCODE';                  // your GoatCounter code
+const SERVICES = [
+  '0000ff00-0000-1000-8000-00805f9b34fb',
+  '000018f0-0000-1000-8000-00805f9b34fb',
+  '0000fff0-0000-1000-8000-00805f9b34fb',
+  '0000ae30-0000-1000-8000-00805f9b34fb',
+  '49535343-fe7d-4ae5-8fa9-9fb0d74d0b40'
+];
+const W = 384, M = 12;                       // 384 dots = 58 mm paper (203 dpi)
+const S = 3;                                 // supersampling factor: draw 3x, then average down for smooth edges
+const FAM = 'Inter, "Helvetica Neue", Arial, sans-serif';
 
-   Setup:
-   1. Google Cloud Console → Credentials → Create OAuth client ID
-      (Web application) → add this page's origin (e.g.
-      https://you.github.io) under Authorized JavaScript origins
-      → copy the Client ID below. You do NOT need to enable the
-      Sheets API for this project — the proxy handles that.
-   ============================================================ */
-const AUTH_CONFIG = {
-  googleClientId: "534292229555-i9vs7h8ui2d6uo899up4mrnf6tptdakl.apps.googleusercontent.com",              // OAuth 2.0 Client ID from Google Cloud Console
-  allowedDomain: "ait.asia"        // Only accounts on this Workspace domain will pass the client-side check
-};
+// ---------- settings ----------
+let settings = { size: 'medium', dark: 'normal' };
+try { Object.assign(settings, JSON.parse(localStorage.getItem(SKEY)) || {}); } catch (e) {}
+function saveSettings() { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch (e) {} }
+document.querySelector('input[name="fsize"][value="' + settings.size + '"]').checked = true;
+document.querySelector('input[name="dark"][value="' + settings.dark + '"]').checked = true;
+document.querySelectorAll('input[name="fsize"]').forEach(r => r.onchange = () => { settings.size = r.value; saveSettings(); });
+document.querySelectorAll('input[name="dark"]').forEach(r => r.onchange = () => { settings.dark = r.value; saveSettings(); });
 
-/* ============================================================
-   DATA_CONFIG — a single Apps Script Web App that:
-     (a) verifies the visitor's Google token server-side,
-     (b) checks their email domain,
-     (c) rate-limits requests per person (real bot mitigation —
-         this is the part a direct Sheets API call cannot do),
-     (d) logs the access, and
-     (e) returns the course data.
+// ---------- visitor count ----------
+function showVisitors() {
+  if (GC_CODE === 'YOURCODE') { $('visitors').textContent = 'not set'; return; }
+  fetch('https://' + GC_CODE + '.goatcounter.com/counter/TOTAL.json')
+    .then(r => r.json()).then(j => { $('visitors').textContent = j.count; })
+    .catch(() => { $('visitors').textContent = '–'; });
+}
 
-   Because the script runs with its own access to the
-   spreadsheet, you do NOT need to share the Sheet with every
-   viewer individually — access is controlled entirely by the
-   checks inside the script below.
+// ---------- device ----------
+function deviceLabel() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPod/.test(ua)) return 'iPhone';
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'iPad';
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? 'Android phone' : 'Android tablet';
+  if (/Windows/.test(ua)) return 'Windows PC';
+  if (/Macintosh/.test(ua)) return 'Mac';
+  if (/CrOS/.test(ua)) return 'Chromebook';
+  if (/Linux/.test(ua)) return 'Linux PC';
+  return 'Device';
+}
+const DEVICE = deviceLabel();
+$('devChip').textContent = DEVICE;
 
-   Setup:
-   1. In your Sheet, keep your course data on a tab (default
-      name "Sheet1" below — change DATA_SHEET_NAME if different)
-      with header row: Group | Code | Course Name | Instructor |
-      Room | Zoom ID | Password | Direct Link
-   2. Add a second tab named exactly "Visits" with header row:
-      Timestamp | Email | Page | Referrer | Browser
-   3. Extensions → Apps Script, replace the code with:
+// ---------- storage ----------
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || { items: [] }; } catch (e) { return { items: [] }; } }
+let state = load();
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-        const ALLOWED_DOMAIN = 'ait.asia';
-        const DATA_SHEET_NAME = 'Sheet1';
-        const RATE_LIMIT_PER_HOUR = 40;
+// ---------- dates ----------
+const dayKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+const timeStr = ts => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+const dateTimeStr = ts => new Date(ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+function dayLabel(ts) {
+  const now = new Date();
+  const yest = new Date(); yest.setDate(now.getDate() - 1);
+  if (dayKey(ts) === dayKey(now)) return 'Today';
+  if (dayKey(ts) === dayKey(yest)) return 'Yesterday';
+  return new Date(ts).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+}
 
-        function doGet(e) {
-          const token = e.parameter.token;
-          if (!token) return json({ error: 'missing_token' });
+// ---------- toast ----------
+let toastT;
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2600); }
 
-          const infoResp = UrlFetchApp.fetch(
-            'https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + encodeURIComponent(token),
-            { muteHttpExceptions: true }
-          );
-          if (infoResp.getResponseCode() !== 200) return json({ error: 'invalid_token' });
+// ---------- Bluetooth ----------
+let device = null, ch = null;
+const isOn = () => !!(ch && device && device.gatt && device.gatt.connected);
 
-          const info = JSON.parse(infoResp.getContentText());
-          const email = info.email || '';
-          if (!email.endsWith('@' + ALLOWED_DOMAIN)) return json({ error: 'domain_not_allowed' });
+function ui() {
+  const on = isOn();
+  $('dot').classList.toggle('on', on);
+  $('ptxt').textContent = on ? 'Connected · ' + (device.name || 'Printer') : 'Printer off';
+  $('pbtn').textContent = on ? 'Disconnect' : 'Connect';
+}
 
-          const props = PropertiesService.getScriptProperties();
-          const key = 'rl_' + email;
-          const now = Date.now();
-          const record = JSON.parse(props.getProperty(key) || '{"count":0,"reset":0}');
-          if (now > record.reset) { record.count = 0; record.reset = now + 3600000; }
-          record.count++;
-          props.setProperty(key, JSON.stringify(record));
-          if (record.count > RATE_LIMIT_PER_HOUR) return json({ error: 'rate_limited' });
-
-          const ss = SpreadsheetApp.getActiveSpreadsheet();
-          const visits = ss.getSheetByName('Visits');
-          if (visits) {
-            visits.appendRow([new Date(), email, e.parameter.page || '', e.parameter.ref || '', e.parameter.ua || '']);
-          }
-
-          const values = ss.getSheetByName(DATA_SHEET_NAME).getDataRange().getValues();
-          return json({ values: values, count: visits ? visits.getLastRow() - 1 : null });
-        }
-
-        function json(obj) {
-          return ContentService.createTextOutput(JSON.stringify(obj))
-            .setMimeType(ContentService.MimeType.JSON);
-        }
-
-   4. Deploy → New deployment → Web app → Execute as "Me",
-      Who has access "Anyone" → Deploy. Copy the /exec URL below
-      as dataApiUrl.
-   5. (Optional) Publish the "Visits" tab to web, paste that link
-      as viewUrl for your own review link in the footer.
-
-   Notes:
-   - RATE_LIMIT_PER_HOUR resets on redeploy (PropertiesService
-     persists otherwise). Raise/lower it to taste.
-   - This stops bulk/automated pulls, even from a valid AIT
-     account. It cannot stop a person from manually copying what
-     they can already see on screen — no client-facing app can.
-   ============================================================ */
-const DATA_CONFIG = {
-  dataApiUrl: "https://script.google.com/a/macros/ait.asia/s/AKfycbzdhFiKEwP-CoFgTWMeNfHu0x4g-TAN1HMybD2BMFP97GKociPlnX2umrc2bi5fwEGC/exec", // e.g. "https://script.google.com/a/macros/ait.asia/s/AKfycbzdhFiKEwP-CoFgTWMeNfHu0x4g-TAN1HMybD2BMFP97GKociPlnX2umrc2bi5fwEGC/exec"
-  viewUrl: ""     // link to the published "Visits" tab, for your own review
-};
-
-/* ---------------- Rendering ---------------- */
-const board = document.getElementById('board');
-const groupFilter = document.getElementById('groupFilter');
-const searchInput = document.getElementById('searchInput');
-const statusPill = document.getElementById('statusPill');
-const statusText = document.getElementById('statusText');
-
-let rows = [];
-let currentUserEmail = '';
-let currentAccessToken = '';
-
-function groupRows(data){
-  const groups = [];
-  const index = new Map();
-  data.forEach(r => {
-    const g = (r.Group || 'Ungrouped').trim();
-    if(!index.has(g)){
-      index.set(g, { name: g, items: [] });
-      groups.push(index.get(g));
+async function openGatt() {
+  if (!device.__listening) {
+    device.addEventListener('gattserverdisconnected', () => { ch = null; ui(); });
+    device.__listening = true;
+  }
+  const server = await device.gatt.connect();
+  let preferred = null, fallback = null;
+  for (const svc of await server.getPrimaryServices()) {
+    for (const c of await svc.getCharacteristics()) {
+      if (!(c.properties.writeWithoutResponse || c.properties.write)) continue;
+      if (c.uuid.indexOf('ff02') >= 0) preferred = c; else if (!fallback) fallback = c;
     }
-    index.get(g).items.push(r);
-  });
-  return groups;
+  }
+  ch = preferred || fallback;
+  if (!ch) throw new Error('No printing port found on this printer.');
+  ui();
 }
 
-function populateFilter(groups){
-  groupFilter.innerHTML = '<option value="">All programs</option>' +
-    groups.map(g => `<option value="${escapeAttr(g.name)}">${escapeHtml(g.name)}</option>`).join('');
+async function pick() {
+  if (!navigator.bluetooth) throw new Error('Use Chrome or Edge on a computer or Android phone.');
+  device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: SERVICES });
+  localStorage.setItem(KEY + '-printer', device.id);
+  await openGatt();
 }
 
-function escapeHtml(s){
-  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function rememberedDevice() {
+  if (!navigator.bluetooth || !navigator.bluetooth.getDevices) return;
+  const id = localStorage.getItem(KEY + '-printer');
+  const list = await navigator.bluetooth.getDevices();
+  device = list.find(d => d.id === id) || (list.length === 1 ? list[0] : null);
 }
-function escapeAttr(s){ return escapeHtml(s); }
 
-function render(){
-  const q = searchInput.value.trim().toLowerCase();
-  const activeGroup = groupFilter.value;
-  const groups = groupRows(rows);
-  board.innerHTML = '';
+async function ensureConnected() {
+  if (isOn()) return;
+  if (!device) await rememberedDevice();
+  if (device) {
+    // reuse the printer silently if the browser still remembers it
+    try { await openGatt(); await new Promise(r => setTimeout(r, 800)); return; }
+    catch (e) { ch = null; ui(); }
+  }
+  // no usable connection: open the picker. It works here because the user just pressed Print.
+  await pick();
+  await new Promise(r => setTimeout(r, 800));
+}
 
-  let shown = 0;
-  let delay = 0;
-
-  groups.forEach(g => {
-    if(activeGroup && g.name !== activeGroup) return;
-
-    const filtered = g.items.filter(r => {
-      if(!q) return true;
-      const hay = `${r.Code} ${r["Course Name"]} ${r.Instructor}`.toLowerCase();
-      return hay.includes(q);
-    });
-    if(filtered.length === 0) return;
-
-    const section = document.createElement('div');
-    section.className = 'concourse';
-
-    const title = document.createElement('div');
-    title.className = 'concourse-title';
-    title.innerHTML = `<span class="code">${escapeHtml(g.name.split(':')[0])}</span><span class="label">${escapeHtml(g.name.split(':').slice(1).join(':').trim())}</span>`;
-    section.appendChild(title);
-
-    const head = document.createElement('div');
-    head.className = 'board-head';
-    head.innerHTML = `<div>Code</div><div>Course</div><div>Instructor</div><div>Room</div><div>Zoom ID</div><div>Password</div><div></div>`;
-    section.appendChild(head);
-
-    filtered.forEach(r => {
-      shown++;
-      const row = document.createElement('div');
-      row.className = 'row';
-      row.style.animationDelay = `${Math.min(delay, 500)}ms`;
-      delay += 12;
-
-      const link = r["Direct Link"] || '#';
-      row.innerHTML = `
-        <div class="code-cell">${escapeHtml(r.Code)}</div>
-        <div><a class="course-link" href="${escapeAttr(link)}" target="_blank" rel="noopener">${escapeHtml(r["Course Name"])}</a></div>
-        <div class="instructor-cell">${escapeHtml(r.Instructor)}</div>
-        <div class="room-cell">${escapeHtml(r.Room)}</div>
-        <div class="zoomid-cell">${escapeHtml(r["Zoom ID"])} <button class="copy-btn" data-copy="${escapeAttr((r["Zoom ID"]||'').replace(/\s/g,''))}">copy</button></div>
-        <div class="pwd-cell">${escapeHtml(r.Password)} <button class="copy-btn" data-copy="${escapeAttr(r.Password)}">copy</button></div>
-        <div class="join-cell"><a class="join-btn" href="${escapeAttr(link)}" target="_blank" rel="noopener">Join →</a></div>
-      `;
-      section.appendChild(row);
-    });
-
-    board.appendChild(section);
-  });
-
-  if(shown === 0){
-    board.innerHTML = `<div class="empty-state">No classes match “${escapeHtml(q)}”. Try a course code, name, or instructor.</div>`;
+async function send(bytes) {
+  const CH = 100;
+  for (let i = 0; i < bytes.length; i += CH) {
+    const part = bytes.slice(i, i + CH);
+    if (ch.properties.writeWithoutResponse) await ch.writeValueWithoutResponse(part);
+    else await ch.writeValue(part);
+    await new Promise(r => setTimeout(r, 20));
   }
 }
 
-searchInput.addEventListener('input', render);
-groupFilter.addEventListener('change', render);
+// ---------- printing ----------
+// Text is drawn at S times the printer resolution, then each S x S block is averaged to one dot.
+// This gives smooth, sharper letter edges than a simple black-or-white cut-off.
+function fontPx() { return { small: 20, medium: 26, large: 34 }[settings.size] || 26; }
 
-board.addEventListener('click', e => {
-  const btn = e.target.closest('.copy-btn');
-  if(!btn) return;
-  navigator.clipboard.writeText(btn.dataset.copy).then(() => {
-    btn.classList.add('copied');
-    const original = btn.textContent;
-    btn.textContent = '✓';
-    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = original; }, 1200);
-  });
-});
-
-function setStatus(text, isFallback){
-  statusText.textContent = text;
-  statusPill.classList.toggle('fallback', !!isFallback);
+function wrapCanvas(g, text, maxW, font) {
+  g.font = font;
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const cand = line ? line + ' ' + w : w;
+    if (line && g.measureText(cand).width > maxW) { lines.push(line); line = w; }
+    else line = cand;
+  }
+  if (line) lines.push(line);
+  return lines.length ? lines : [''];
 }
 
-function boot(data){
-  rows = data;
-  populateFilter(groupRows(rows));
+// Lays out the items (in scaled units). Returns the total height in scaled units.
+function layout(g, items, draw) {
+  const sz = fontPx();
+  const itemFont = `600 ${sz * S}px ${FAM}`;
+  const metaFont = `500 ${16 * S}px ${FAM}`;
+  const lh = Math.round(sz * 1.28) * S;
+  const boxS = Math.round(sz * 0.72) * S;
+  const m = M * S;
+  const textX = m + boxS + 12 * S;
+  const textW = W * S - textX - m;
+  g.textBaseline = 'top';
+  g.fillStyle = '#000';
+  g.strokeStyle = '#000';
+  g.lineWidth = 2 * S;
+  let y = 8 * S;
+  for (const it of items) {
+    const lines = wrapCanvas(g, it.text, textW, itemFont);
+    const top = y;
+    if (draw) {
+      g.font = itemFont;
+      lines.forEach((ln, i) => g.fillText(ln, textX, top + i * lh));
+      const by = top + Math.round((lh - boxS) / 2);
+      if (it.priority === 'high') g.fillRect(m, by, boxS, boxS);
+      else g.strokeRect(m + S, by + S, boxS - 2 * S, boxS - 2 * S);
+    }
+    y = top + lines.length * lh;
+    if (draw) { g.font = metaFont; g.fillText(dateTimeStr(it.addedAt), textX, y + 2 * S); }
+    y += Math.round(16 * 1.4) * S + 12 * S;
+  }
+  return y;
+}
+
+async function renderRaster(items) {
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  const probe = document.createElement('canvas').getContext('2d');
+  const hs = layout(probe, items, false);
+  const H = Math.ceil(hs / S) + 4;                       // final height in printer dots
+  const c = document.createElement('canvas');
+  c.width = W * S; c.height = H * S;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, W * S, H * S);
+  layout(g, items, true);
+  const px = g.getImageData(0, 0, W * S, H * S).data;
+
+  // darkness: a higher threshold means more of each averaged dot turns black
+  const thr = { light: 110, normal: 150, dark: 190 }[settings.dark] || 150;
+  const bpr = W / 8;
+  const bytes = [0x1b, 0x40, 0x1f, 0x11, 0x02, 0x04, 0x1d, 0x76, 0x30, 0x00, bpr & 255, bpr >> 8, H & 255, H >> 8];
+  for (let y = 0; y < H; y++) {
+    for (let xb = 0; xb < bpr; xb++) {
+      let b = 0;
+      for (let bit = 0; bit < 8; bit++) {
+        const x = xb * 8 + bit;
+        let sum = 0;
+        for (let dy = 0; dy < S; dy++) {
+          for (let dx = 0; dx < S; dx++) {
+            sum += px[((y * S + dy) * W * S + (x * S + dx)) * 4];
+          }
+        }
+        if (sum / (S * S) < thr) b |= (0x80 >> bit);
+      }
+      bytes.push(b);
+    }
+  }
+  bytes.push(0x1b, 0x64, 0x02, 0x1f, 0x11, 0x08, 0x1f, 0x11, 0x0e, 0x1f, 0x11, 0x07, 0x1f, 0x11, 0x09);
+  return new Uint8Array(bytes);
+}
+
+async function printItems(items) {
+  await ensureConnected();
+  // reset the printer and clear its buffer so no leftover bytes print as garbage
+  await send(new Uint8Array([0x1b, 0x40, ...new Array(32).fill(0)]));
+  await new Promise(r => setTimeout(r, 300));
+  const PER = 6;
+  for (let i = 0; i < items.length; i += PER) {
+    await send(await renderRaster(items.slice(i, i + PER)));
+  }
+  ui();
+}
+
+// ---------- tasks ----------
+function addTaskText(text) {
+  text = text.trim();
+  if (!text) { toast('Type a task first'); return; }
+  const item = {
+    id: uid(), text, done: false,
+    priority: document.querySelector('input[name="pri"]:checked').value,
+    device: DEVICE, addedAt: Date.now()
+  };
+  state.items.unshift(item);
+  persist();
+  render();
+  if ($('prn').checked) {
+    printItems([item]).then(() => toast('Added and printed')).catch(e => toast('Added. ' + e.message));
+  } else toast('Added');
+}
+
+function mkBtn(label, fn, cls) {
+  const b = document.createElement('button');
+  b.className = 'btn small ' + (cls || 'gray');
+  b.textContent = label;
+  b.onclick = fn;
+  return b;
+}
+
+function itemRow(it) {
+  const row = document.createElement('div');
+  row.className = 'item' + (it.done ? ' done' : '');
+  const chk = document.createElement('button');
+  chk.className = 'check';
+  chk.textContent = it.done ? '✓' : '';
+  chk.onclick = () => { it.done = !it.done; persist(); render(); };
+  const body = document.createElement('div');
+  body.className = 'body';
+  const title = document.createElement('div');
+  title.className = 'title';
+  title.textContent = it.text;
+  if (it.priority === 'high') { const tg = document.createElement('span'); tg.className = 'tag'; tg.textContent = 'HIGH'; title.appendChild(tg); }
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = timeStr(it.addedAt) + ' · ' + it.device;
+  const acts = document.createElement('div');
+  acts.className = 'acts';
+  acts.append(
+    mkBtn('Print', () => printItems([it]).then(() => toast('Printed')).catch(e => toast(e.message))),
+    mkBtn('Edit', () => openEdit(it)),
+    mkBtn('Delete', () => del(it), 'red')
+  );
+  body.append(title, meta, acts);
+  row.append(chk, body);
+  return row;
+}
+
+function render() {
+  const list = $('list');
+  list.innerHTML = '';
+  const open = state.items.filter(i => !i.done).length;
+  $('count').textContent = state.items.length ? open + ' open · ' + state.items.length + ' total' : '';
+  if (!state.items.length) list.innerHTML = '<p class="empty">No tasks yet. Add one above.</p>';
+  let last = null;
+  for (const it of state.items) {
+    const k = dayKey(it.addedAt);
+    if (k !== last) {
+      const h = document.createElement('div');
+      h.className = 'day';
+      h.textContent = dayLabel(it.addedAt);
+      list.append(h);
+      last = k;
+    }
+    list.append(itemRow(it));
+  }
+  renderSticky();
+}
+
+function del(it) {
+  if (!confirm('Delete this task?')) return;
+  state.items = state.items.filter(x => x !== it);
+  persist();
   render();
 }
 
-/* ---------------- Clock ---------------- */
-function tick(){
-  const now = new Date();
-  const bkk = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
-  document.getElementById('clock').textContent = bkk.toLocaleTimeString('en-GB');
-}
-tick();
-setInterval(tick, 1000);
-
-/* ---------------- Auth (Google Sign-In + rate-limited proxy) ---------------- */
-const authOverlay = document.getElementById('authOverlay');
-const appContent = document.getElementById('appContent');
-const signInBtn = document.getElementById('signInBtn');
-const authError = document.getElementById('authError');
-const authLoading = document.getElementById('authLoading');
-const authLoadingText = document.getElementById('authLoadingText');
-let tokenClient;
-
-function showLoading(text){
-  authError.hidden = true;
-  signInBtn.style.display = 'none';
-  authLoadingText.textContent = text;
-  authLoading.hidden = false;
-}
-
-function hideLoading(){
-  authLoading.hidden = true;
-  signInBtn.style.display = 'inline-flex';
-}
-
-function showAuthError(msg){
-  hideLoading();
-  authError.textContent = msg;
-  authError.hidden = false;
-}
-
-function initAuth(){
-  if(!AUTH_CONFIG.googleClientId || !DATA_CONFIG.dataApiUrl){
-    signInBtn.textContent = 'Not configured';
-    showAuthError('This directory has not been connected yet. See AUTH_CONFIG / DATA_CONFIG in the page source.');
-    return;
-  }
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: AUTH_CONFIG.googleClientId,
-    scope: 'https://www.googleapis.com/auth/userinfo.email',
-    callback: handleTokenResponse
-  });
-  signInBtn.textContent = 'Sign in with AIT email';
-  signInBtn.disabled = false;
-  signInBtn.addEventListener('click', () => {
-    showLoading('Opening Google sign-in…');
-    tokenClient.requestAccessToken({ prompt: 'consent' });
-  });
-}
-
-async function handleTokenResponse(resp){
-  if(resp.error){
-    showAuthError('Sign-in failed or was cancelled. Please try again.');
-    return;
-  }
-  currentAccessToken = resp.access_token;
-  showLoading('Verifying your account…');
-  await loadFromProxy(currentAccessToken);
-}
-
-async function loadFromProxy(token){
-  try{
-    showLoading('Loading class schedule…');
-    const params = new URLSearchParams({
-      token,
-      page: location.pathname,
-      ref: document.referrer || 'direct',
-      ua: navigator.userAgent
-    });
-    const res = await fetch(`${DATA_CONFIG.dataApiUrl}?${params.toString()}`);
-    if(!res.ok){
-      throw new Error('Proxy error ' + res.status);
-    }
-    const data = await res.json();
-
-    if(data.error === 'domain_not_allowed'){
-      showAuthError(`This directory is restricted to @${AUTH_CONFIG.allowedDomain} accounts. Please sign in with your AIT account.`);
-      return;
-    }
-    if(data.error === 'rate_limited'){
-      showAuthError('Too many requests from your account in a short time. Please wait a bit and try again.');
-      return;
-    }
-    if(data.error === 'invalid_token' || data.error === 'missing_token'){
-      showAuthError('Could not verify your sign-in. Please try again.');
-      return;
-    }
-
-    const values = data.values || [];
-    if(values.length < 2){
-      showAuthError('The schedule loaded but appears to be empty.');
-      return;
-    }
-    const [header, ...body] = values;
-    const rowsData = body
-      .filter(r => r.length && r[0])
-      .map(r => {
-        const obj = {};
-        header.forEach((h, i) => { obj[h.trim()] = r[i] || ''; });
-        return obj;
-      });
-
-    showLoading('Almost there…');
-
-    // Decode the visitor's own email from the token for display only
-    try{
-      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      const userInfo = await userInfoRes.json();
-      currentUserEmail = userInfo.email || '';
-    } catch(e){ /* non-fatal, just for the header label */ }
-
-    authOverlay.style.display = 'none';
-    appContent.style.display = 'block';
-    document.getElementById('signedInAs').innerHTML =
-      `Signed in as ${escapeHtml(currentUserEmail)} · <button onclick="location.reload()">sign out</button>`;
-
-    boot(rowsData);
-    setStatus('Live · access verified', false);
-    if(DATA_CONFIG.viewUrl){
-      document.getElementById('viewLogLink').href = DATA_CONFIG.viewUrl;
-    } else {
-      document.getElementById('viewLogLink').style.display = 'none';
-    }
-    document.getElementById('visitCount').textContent = data.count ?? '—';
-  } catch(err){
-    showAuthError('Could not load the schedule. Please try again or contact the administrator.');
-  }
-}
-
-window.onload = () => {
-  // google.accounts is loaded async; poll briefly until ready
-  const tryInit = () => {
-    if(window.google && google.accounts && google.accounts.oauth2){
-      initAuth();
-    } else {
-      setTimeout(tryInit, 150);
-    }
-  };
-  tryInit();
+let editing = null;
+function openEdit(it) { editing = it; $('editTxt').value = it.text; $('sheet').hidden = false; setTimeout(() => $('editTxt').focus(), 60); }
+function closeEdit() { $('sheet').hidden = true; editing = null; }
+$('editCancel').onclick = closeEdit;
+$('editSave').onclick = () => {
+  const v = $('editTxt').value.trim();
+  if (v && editing) { editing.text = v; persist(); render(); }
+  closeEdit();
 };
+$('sheet').addEventListener('click', e => { if (e.target === $('sheet')) closeEdit(); });
+$('editTxt').addEventListener('keydown', e => { if (e.key === 'Enter') $('editSave').click(); });
+
+// ---------- sticky note (Document Picture-in-Picture: a window that stays on top) ----------
+let pipWin = null;
+const STICKY_CSS = `
+  body { margin: 0; background: #fff3a8; color: #2b2500; font-family: Inter, -apple-system, "Segoe UI", Arial, sans-serif; padding: 14px; }
+  h2 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+  input { width: 100%; border: 0; outline: none; border-radius: 8px; padding: 9px 10px; font: inherit; font-size: 15px; background: rgba(255,255,255,.75); margin-bottom: 8px; }
+  .li { display: flex; gap: 9px; align-items: flex-start; padding: 7px 0; border-bottom: 1px dashed rgba(0,0,0,.2); font-size: 15px; }
+  .cb { width: 19px; height: 19px; border: 2px solid #6b5d00; border-radius: 5px; background: none; flex: none; cursor: pointer; padding: 0; margin-top: 1px; }
+  .txt { flex: 1; line-height: 1.3; overflow-wrap: anywhere; }
+  .tm { font-size: 12px; color: #6b5d00; margin-top: 2px; }
+  .hi { font-weight: 700; }
+  .empty { color: #6b5d00; font-size: 14px; }
+`;
+
+async function openSticky() {
+  if (!('documentPictureInPicture' in window)) {
+    toast('Sticky note needs Chrome or Edge on a computer.');
+    return;
+  }
+  if (pipWin && !pipWin.closed) { pipWin.focus(); return; }
+  try {
+    pipWin = await documentPictureInPicture.requestWindow({ width: 300, height: 420 });
+  } catch (e) { toast('Could not open the sticky note.'); return; }
+  const d = pipWin.document;
+  const st = d.createElement('style');
+  st.textContent = STICKY_CSS;
+  d.head.appendChild(st);
+  d.body.innerHTML = '<h2 id="sTitle"></h2><input id="sAdd" placeholder="Quick task, press Enter"><div id="sList"></div>';
+  d.getElementById('sAdd').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { const v = e.target.value; e.target.value = ''; addTaskText(v); }
+  });
+  pipWin.addEventListener('pagehide', () => { pipWin = null; });
+  renderSticky();
+}
+
+function renderSticky() {
+  if (!pipWin || pipWin.closed) return;
+  const d = pipWin.document;
+  const open = state.items.filter(i => !i.done);
+  d.getElementById('sTitle').textContent = 'Open tasks · ' + open.length;
+  const list = d.getElementById('sList');
+  list.innerHTML = '';
+  if (!open.length) { list.innerHTML = '<p class="empty">Nothing open. Nice.</p>'; return; }
+  for (const it of open) {
+    const row = d.createElement('div');
+    row.className = 'li';
+    const cb = d.createElement('button');
+    cb.className = 'cb';
+    cb.setAttribute('aria-label', 'Mark done');
+    cb.onclick = () => { it.done = true; persist(); render(); };
+    const body = d.createElement('div');
+    body.className = 'txt';
+    const t = d.createElement('div');
+    t.textContent = it.text;
+    if (it.priority === 'high') t.classList.add('hi');
+    const tm = d.createElement('div');
+    tm.className = 'tm';
+    tm.textContent = dateTimeStr(it.addedAt);
+    body.append(t, tm);
+    row.append(cb, body);
+    list.append(row);
+  }
+}
+
+// ---------- wiring ----------
+$('addBtn').onclick = () => { const v = $('txt').value; $('txt').value = ''; addTaskText(v); };
+$('txt').addEventListener('keydown', e => { if (e.key === 'Enter') { const v = $('txt').value; $('txt').value = ''; addTaskText(v); } });
+
+$('stickyBtn').onclick = openSticky;
+
+$('pbtn').onclick = async () => {
+  try {
+    if (isOn()) { device.gatt.disconnect(); ch = null; ui(); toast('Printer disconnected'); }
+    else { await pick(); toast('Printer connected'); }
+  } catch (e) {
+    toast(e.name === 'NotFoundError' ? 'No printer selected' : (e.message || 'Connection failed'));
+  }
+};
+
+$('printOpen').onclick = () => {
+  const open = state.items.filter(i => !i.done);
+  if (!open.length) { toast('No open tasks'); return; }
+  printItems(open).then(() => toast('Printed ' + open.length + ' task(s)')).catch(e => toast(e.message));
+};
+
+$('cleanBtn').onclick = () => {
+  const days = Number(document.querySelector('input[name="age"]:checked').value);
+  const only = $('donly').checked;
+  const label = { 14: '2 weeks', 30: '1 month', 90: '3 months' }[days];
+  if (!confirm('Delete ' + (only ? 'completed ' : '') + 'tasks older than ' + label + '?')) return;
+  const cutoff = Date.now() - days * 86400000;
+  const before = state.items.length;
+  state.items = state.items.filter(i => !(i.addedAt < cutoff && (!only || i.done)));
+  persist();
+  render();
+  toast('Deleted ' + (before - state.items.length) + ' task(s)');
+};
+
+$('test').onclick = () => {
+  printItems([{ text: 'Test print. Printer works!', priority: 'normal', device: DEVICE, addedAt: Date.now() }])
+    .then(() => toast('Test printed')).catch(e => toast(e.message));
+};
+
+if (!navigator.bluetooth) {
+  $('browserNote').textContent = 'This browser cannot reach Bluetooth printers. Open this page in Chrome or Edge on a computer or Android phone.';
+  $('pbtn').disabled = true;
+  $('ptxt').textContent = 'Bluetooth unavailable';
+}
+if (!('documentPictureInPicture' in window)) {
+  $('stickyBtn').disabled = true;
+  $('stickyBtn').textContent = 'Sticky note needs Chrome or Edge';
+}
+
+(async () => {
+  try { await rememberedDevice(); if (device) await openGatt(); } catch (e) {}
+  ui();
+})();
+
+showVisitors();
+render();
 </script>
 </body>
 </html>
